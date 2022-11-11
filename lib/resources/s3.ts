@@ -11,7 +11,7 @@ export class S3Buckets {
                   allowedMethods: [
                     HttpMethods.GET
                   ],
-                  allowedOrigins: ['*'],
+                  allowedOrigins: ['http://localhost:3000', 'https:://alicolver.com'],
                   allowedHeaders: ['*'],
                 },
             ],

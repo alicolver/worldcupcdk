@@ -4,17 +4,11 @@ import { Construct } from "constructs"
 export class DynamoTable {
 
   readonly dynamoTable: Table
-  readonly teamTable: Table
 
   constructor(scope: Construct) {
     this.dynamoTable = new Table(scope, "worldCup2022Table", {
       partitionKey: { name: "partitionKey", type: AttributeType.STRING },
       sortKey: { name: "sortKey", type: AttributeType.STRING },
-      billingMode: BillingMode.PAY_PER_REQUEST
-    })
-
-    this.teamTable = new Table(scope, "teamTable", {
-      partitionKey: { name: "name", type: AttributeType.NUMBER },
       billingMode: BillingMode.PAY_PER_REQUEST
     })
   }

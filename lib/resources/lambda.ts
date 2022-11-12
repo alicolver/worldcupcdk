@@ -1,5 +1,5 @@
 import { Table } from "aws-cdk-lib/aws-dynamodb"
-import { Runtime } from "aws-cdk-lib/aws-lambda"
+import { Function, Runtime } from "aws-cdk-lib/aws-lambda"
 import { Construct } from "constructs"
 import { NodejsFunction, NodejsFunctionProps } from "aws-cdk-lib/aws-lambda-nodejs"
 import { join } from "path"
@@ -13,6 +13,9 @@ interface LambdaProps {
 }
 
 export class Lambda {
+
+  readonly function : Function
+
   constructor(scope: Construct, props: LambdaProps) {
     const nodeJsFunctionProps: NodejsFunctionProps = {
       bundling: {
@@ -28,13 +31,13 @@ export class Lambda {
       runtime: Runtime.NODEJS_16_X,
     }
 
-    const apiHandler = new NodejsFunction(scope, "apihandler", {
+    this.function = new NodejsFunction(scope, "apihandler", {
       entry: join(__dirname, "../../../", "src/api-handler", "handler.ts"),
       ...nodeJsFunctionProps,
     })
 
-    props.dynamoTable.grantReadWriteData(apiHandler)
-    apiHandler.addToRolePolicy(
+    props.dynamoTable.grantReadWriteData(this.function)
+    this.function.addToRolePolicy(
       new PolicyStatement({
         effect: Effect.ALLOW,
         actions: [

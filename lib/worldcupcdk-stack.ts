@@ -27,14 +27,16 @@ export class WorldcupcdkStack extends cdk.Stack {
     // dynamo
     const dynamoTable = new DynamoTable(this)
 
-    // api gateway
-    // new ApiGateway(this)
-
     // lambda 
-    new Lambda(this, {
+    const lambda = new Lambda(this, {
       dynamoTable: dynamoTable.dynamoTable,
       cognitoUserClient: cognitoUserClient.cognitoUserClient,
       cognitoUserPool: cognitoUserPool.cognitoUserPool
+    })
+
+    // api gateway
+    new ApiGateway(this, {
+      lambda: lambda
     })
 
     // S3 bucket for fun little pictures

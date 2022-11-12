@@ -1,10 +1,11 @@
 import * as cdk from 'aws-cdk-lib';
-import { Table } from 'aws-cdk-lib/aws-dynamodb';
 import { Construct } from 'constructs';
 import { ApiGateway } from './resources/apiGateway';
 import { S3Buckets } from './resources/s3';
 import { DynamoTable } from "./resources/dynamodb"
 import { Lambda } from './resources/lambda';
+import { CognitoUserPool } from './resources/cognitoUserPool';
+import { CognitoUserClient } from './resources/cognitoUserClient';
 
 export class WorldcupcdkStack extends cdk.Stack {
   
@@ -12,6 +13,10 @@ export class WorldcupcdkStack extends cdk.Stack {
     super(scope, id, props);
 
     // cognito 
+    const cognitoUserPool = new CognitoUserPool(this)
+    const cognitoUserClient = new CognitoUserClient(this, {
+      cognitoUserPool: cognitoUserPool.cognitoUserPool
+    })
 
     // dynamo
     const dynamoTable = new DynamoTable(this)
@@ -22,6 +27,8 @@ export class WorldcupcdkStack extends cdk.Stack {
     // lambda 
     new Lambda(this, {
       dynamoTable: dynamoTable.dynamoTable,
+      cognitoUserClient: cognitoUserClient.cognitoUserClient,
+      cognitoUserPool: cognitoUserPool.cognitoUserPool
     })
 
     // S3 bucket for fun little pictures

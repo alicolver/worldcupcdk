@@ -14,24 +14,24 @@ export class ApiGateway {
       
       defaultCorsPreflightOptions: {
         allowHeaders: [
-          'Content-Type',
-          'X-Amz-Date',
-          'Authorization',
-          'X-Api-Key',
+          "Content-Type",
+          "X-Amz-Date",
+          "Authorization",
+          "X-Api-Key",
         ],
-        allowMethods: ['GET', 'POST'],
+        allowMethods: ["GET", "POST"],
         allowCredentials: true,
-        allowOrigins: ['http://localhost:3000', "https://alicolver.com"],
+        allowOrigins: ["http://localhost:3000", "https://alicolver.com"],
       }
     })
     
     const backend = props.lambda.function
 
-    gateway.root.addResource('scores').addMethod(HttpMethod.GET, new LambdaIntegration(backend))
-    gateway.root.addResource('predictions').addMethod(HttpMethod.POST, new LambdaIntegration(backend))
-    gateway.root.addResource('leaderboard').addMethod(HttpMethod.GET, new LambdaIntegration(backend))
-    gateway.root.addResource('match/live').addMethod(HttpMethod.GET, new LambdaIntegration(backend))
-    gateway.root.addResource('match/end').addMethod(HttpMethod.POST, new LambdaIntegration(backend))
-    gateway.root.addResource('match/prediction').addMethod(HttpMethod.GET, new LambdaIntegration(backend))
+    gateway.root.addResource("scores").addMethod(HttpMethod.GET, new LambdaIntegration(backend))
+    gateway.root.addResource("predictions").addMethod(HttpMethod.POST, new LambdaIntegration(backend))
+    gateway.root.addResource("leaderboard").addMethod(HttpMethod.GET, new LambdaIntegration(backend))
+    gateway.root.addResource("match/live").addMethod(HttpMethod.GET, new LambdaIntegration(backend))
+    gateway.root.addResource("match/end").addMethod(HttpMethod.POST, new LambdaIntegration(backend))
+    gateway.root.addResource("match/prediction").addMethod(HttpMethod.GET, new LambdaIntegration(backend))
   }
 }

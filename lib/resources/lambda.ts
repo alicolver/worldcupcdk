@@ -1,5 +1,5 @@
 import { Table } from "aws-cdk-lib/aws-dynamodb"
-import { Function, Runtime } from "aws-cdk-lib/aws-lambda"
+import { Function as LambdaFunction, Runtime } from "aws-cdk-lib/aws-lambda"
 import { Construct } from "constructs"
 import { NodejsFunction, NodejsFunctionProps } from "aws-cdk-lib/aws-lambda-nodejs"
 import { join } from "path"
@@ -14,7 +14,7 @@ interface LambdaProps {
 
 export class Lambda {
 
-  readonly function : Function
+  readonly function : LambdaFunction
 
   constructor(scope: Construct, props: LambdaProps) {
     const nodeJsFunctionProps: NodejsFunctionProps = {

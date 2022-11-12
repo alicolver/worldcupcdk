@@ -1,7 +1,4 @@
-on:
-  push:
-    branches:
-      - main
+on: [push]
 
 jobs:
   aws_cdk:
@@ -29,6 +26,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: "eu-west-2"
       - name: cdk deploy
+        if: github.ref == 'refs/heads/main'
         uses: youyo/aws-cdk-github-actions@v2
         with:
           cdk_subcommand: "deploy"

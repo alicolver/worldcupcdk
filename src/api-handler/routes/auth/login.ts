@@ -4,6 +4,9 @@ import { z } from "zod";
 
 const cognito = new AWS.CognitoIdentityServiceProvider();
 
+const USER_POOL_ID = process.env.USER_POOL_ID as string;
+const USER_POOL_CLIENT_ID = process.env.USER_POOL_CLIENT_ID as string;
+
 const loginSchema = z.object({
   password: z.string(),
   email: z.string(),
@@ -19,12 +22,10 @@ export const loginHandler = async (event: any): Promise<APIGatewayProxyResult> =
       };
     }
     const { email, password } = parsedEvent.data;
-    const user_pool_id = process.env.user_pool_id as string;
-    const client_id = process.env.client_id as string;
     const params = {
       AuthFlow: "ADMIN_NO_SRP_AUTH",
-      UserPoolId: user_pool_id,
-      ClientId: client_id,
+      UserPoolId: USER_POOL_ID,
+      ClientId: USER_POOL_CLIENT_ID,
       AuthParameters: {
         USERNAME: email,
         PASSWORD: password,

@@ -10,8 +10,6 @@ interface ApiGatewayProps {
 export class ApiGateway {
   constructor(scope: Construct, props: ApiGatewayProps) {
     const gateway = new RestApi(scope, "WorldCupApi", {
-      restApiName: "WorldCupApi",
-      
       defaultCorsPreflightOptions: {
         allowHeaders: [
           "Content-Type",
@@ -41,5 +39,13 @@ export class ApiGateway {
     const match = gateway.root.addResource("match")
     match.addMethod(HttpMethod.GET, integration)
     match.addMethod(HttpMethod.POST, integration)
+
+    const auth = gateway.root.addResource("auth")
+
+    const login = auth.addResource("login")
+    login.addMethod(HttpMethod.POST, integration)
+    
+    const signup = auth.addResource("signup")
+    signup.addMethod(HttpMethod.POST, integration)
   }
 }

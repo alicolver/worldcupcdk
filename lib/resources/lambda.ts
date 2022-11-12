@@ -27,6 +27,8 @@ export class Lambda {
       environment: {
         PRIMARY_KEY: "itemId",
         TABLE_NAME: props.dynamoTable.tableName,
+        USER_POOL_CLIENT_ID: props.cognitoUserClient.userPoolClientId,
+        USER_POOL_ID: props.cognitoUserPool.userPoolId,
       },
       runtime: Runtime.NODEJS_16_X,
     }

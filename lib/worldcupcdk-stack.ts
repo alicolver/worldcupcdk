@@ -18,28 +18,23 @@ export class WorldcupcdkStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: WorldcupcdkStackProps) {
     super(scope, id, props)
 
-    // cognito 
     const cognitoUserPool = new CognitoUserPool(this)
     const cognitoUserClient = new CognitoUserClient(this, {
       cognitoUserPool: cognitoUserPool.cognitoUserPool
     })
 
-    // dynamo
     const dynamoTable = new DynamoTable(this)
 
-    // lambda 
     const lambda = new Lambda(this, {
       dynamoTable: dynamoTable.dynamoTable,
       cognitoUserClient: cognitoUserClient.cognitoUserClient,
       cognitoUserPool: cognitoUserPool.cognitoUserPool
     })
 
-    // api gateway
     new ApiGateway(this, {
       lambda: lambda
     })
 
-    // S3 bucket for fun little pictures
     new S3Buckets(this, {
       stage: props.stage,
     })

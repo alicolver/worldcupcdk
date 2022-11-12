@@ -10,6 +10,8 @@ interface ApiGatewayProps {
 export class ApiGateway {
   constructor(scope: Construct, props: ApiGatewayProps) {
     const gateway = new RestApi(scope, "WorldCupApi", {
+      restApiName: "WorldCupApi",
+
       defaultCorsPreflightOptions: {
         allowHeaders: [
           "Content-Type",

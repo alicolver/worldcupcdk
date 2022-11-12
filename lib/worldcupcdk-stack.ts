@@ -1,16 +1,22 @@
-import * as cdk from 'aws-cdk-lib';
-import { Construct } from 'constructs';
-import { ApiGateway } from './resources/apiGateway';
-import { S3Buckets } from './resources/s3';
+import * as cdk from "aws-cdk-lib"
+import { Table } from "aws-cdk-lib/aws-dynamodb"
+import { Construct } from "constructs"
+import { ApiGateway } from "./resources/apiGateway"
+import { S3Buckets } from "./resources/s3"
 import { DynamoTable } from "./resources/dynamodb"
-import { Lambda } from './resources/lambda';
-import { CognitoUserPool } from './resources/cognito/cognitoUserPool';
-import { CognitoUserClient } from './resources/cognito/cognitoUserClient';
+import { Lambda } from "./resources/lambda"
+import { deploymentStage } from "./utils/environment"
+import { CognitoUserPool } from "./resources/cognito/cognitoUserPool"
+import { CognitoUserClient } from "./resources/cognito/cognitoUserClient"
+
+interface WorldcupcdkStackProps extends cdk.StackProps {
+  stage: deploymentStage
+}
 
 export class WorldcupcdkStack extends cdk.Stack {
-  
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
-    super(scope, id, props);
+
+  constructor(scope: Construct, id: string, props: WorldcupcdkStackProps) {
+    super(scope, id, props)
 
     // cognito 
     const cognitoUserPool = new CognitoUserPool(this)
@@ -22,8 +28,8 @@ export class WorldcupcdkStack extends cdk.Stack {
     const dynamoTable = new DynamoTable(this)
 
     // api gateway
-    new ApiGateway(this)
-    
+    // new ApiGateway(this)
+
     // lambda 
     new Lambda(this, {
       dynamoTable: dynamoTable.dynamoTable,
@@ -32,7 +38,9 @@ export class WorldcupcdkStack extends cdk.Stack {
     })
 
     // S3 bucket for fun little pictures
-    new S3Buckets(this)
+    new S3Buckets(this, {
+      stage: props.stage,
+    })
 
   }
 }

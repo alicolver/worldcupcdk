@@ -1,8 +1,8 @@
-import { StringAttribute, UserPool, UserPoolClient } from "aws-cdk-lib/aws-cognito";
-import { Construct } from "constructs";
+import { StringAttribute, UserPool, UserPoolClient } from "aws-cdk-lib/aws-cognito"
+import { Construct } from "constructs"
 
 export class CognitoUserPool {
-  readonly cognitoUserPool: UserPool;
+  readonly cognitoUserPool: UserPool
   readonly cognitoUserClient: UserPoolClient
   constructor(scope: Construct) {
     this.cognitoUserPool = new UserPool(scope, "worldCup2022UserPool", {
@@ -24,6 +24,6 @@ export class CognitoUserPool {
         requireUppercase: false,
         requireSymbols: false,
       },
-    });
+    })
   }
 }

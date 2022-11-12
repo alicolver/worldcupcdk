@@ -21,9 +21,12 @@
     "strictPropertyInitialization": false,
     "typeRoots": [
       "./node_modules/@types"
-    ]
+    ],
+    "outDir": "bin"
   },
   "exclude": [
+    "bin",
+    "src",
     "node_modules",
     "cdk.out"
   ]

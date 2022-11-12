@@ -26,12 +26,20 @@ export class ApiGateway {
     })
     
     const backend = props.lambda.function
+    const integration = new LambdaIntegration(backend)
 
-    gateway.root.addResource("scores").addMethod(HttpMethod.GET, new LambdaIntegration(backend))
-    gateway.root.addResource("predictions").addMethod(HttpMethod.POST, new LambdaIntegration(backend))
-    gateway.root.addResource("leaderboard").addMethod(HttpMethod.GET, new LambdaIntegration(backend))
+    gateway.root.addResource("leaderboard").addMethod(HttpMethod.GET, integration)
+
+    const score = gateway.root.addResource("score")
+    score.addMethod(HttpMethod.GET, integration)
+    score.addMethod(HttpMethod.POST, integration)
+
+    const predictions = gateway.root.addResource("predictions")
+    predictions.addMethod(HttpMethod.GET, integration)
+    predictions.addMethod(HttpMethod.POST, integration)
+
     const match = gateway.root.addResource("match")
-    match.addMethod(HttpMethod.GET, new LambdaIntegration(backend))
-    match.addMethod(HttpMethod.POST, new LambdaIntegration(backend))
+    match.addMethod(HttpMethod.GET, integration)
+    match.addMethod(HttpMethod.POST, integration)
   }
 }

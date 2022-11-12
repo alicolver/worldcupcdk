@@ -4,6 +4,7 @@ import {
   APIGatewayProxyResult,
 } from "aws-lambda";
 import { loginHandler } from "./routes/auth/login";
+import { signupHandler } from "./routes/auth/signup";
 
 export const handler = async (
   event: APIGatewayProxyEvent,
@@ -12,7 +13,10 @@ export const handler = async (
   const endpoint = event.path;
   switch (endpoint) {
     case "/auth/login": {
-      return await loginHandler();
+      return await loginHandler(event);
+    }
+    case "/auth/signup": {
+      return await signupHandler(event);
     }
     default: {
       return {

@@ -1,8 +1,5 @@
 import { APIGatewayProxyResult } from "aws-lambda";
-import AWS from "aws-sdk";
 import { z } from "zod";
-
-const cognito = new AWS.CognitoIdentityServiceProvider();
 
 const USER_POOL_ID = process.env.USER_POOL_ID as string;
 
@@ -14,7 +11,8 @@ const signupSchema = z.object({
 });
 
 export const signupHandler = async (
-  event: any
+  event: any,
+  cognito: AWS.CognitoIdentityServiceProvider  
 ): Promise<APIGatewayProxyResult> => {
   try {
     const parsedEvent = signupSchema.safeParse(JSON.parse(event.body));

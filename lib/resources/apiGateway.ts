@@ -40,7 +40,8 @@ export class ApiGateway {
 
     const match = gateway.root.addResource("match")
     match.addMethod(HttpMethod.GET, integration)
-    match.addMethod(HttpMethod.POST, integration)
+    const end = match.addResource("end")
+    end.addMethod(HttpMethod.POST, integration)
 
     const auth = gateway.root.addResource("auth")
 

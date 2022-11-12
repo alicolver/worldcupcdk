@@ -1,8 +1,6 @@
 import { APIGatewayProxyResult } from "aws-lambda";
-import AWS from "aws-sdk";
 import { z } from "zod";
-
-const cognito = new AWS.CognitoIdentityServiceProvider();
+import { DEFAULT_ERROR, SERVER_ERROR } from "../../utils/constants";
 
 const USER_POOL_ID = process.env.USER_POOL_ID as string;
 const USER_POOL_CLIENT_ID = process.env.USER_POOL_CLIENT_ID as string;
@@ -12,14 +10,14 @@ const loginSchema = z.object({
   email: z.string(),
 });
 
-export const loginHandler = async (event: any): Promise<APIGatewayProxyResult> => {
+export const loginHandler = async (
+  event: any,
+  cognito: AWS.CognitoIdentityServiceProvider
+): Promise<APIGatewayProxyResult> => {
   try {
     const parsedEvent = loginSchema.safeParse(JSON.parse(event.body));
     if (!parsedEvent.success) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ message: "Invalid input" }),
-      };
+      return DEFAULT_ERROR;
     }
     const { email, password } = parsedEvent.data;
     const params = {
@@ -56,11 +54,6 @@ export const loginHandler = async (event: any): Promise<APIGatewayProxyResult> =
       }),
     };
   } catch (error) {
-    return {
-      statusCode: 500,
-      body: JSON.stringify({
-        message: (error as any).messsage || "Internal server error",
-      }),
-    };
+    return SERVER_ERROR(error)
   }
 };

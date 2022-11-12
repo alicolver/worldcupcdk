@@ -30,8 +30,8 @@ export class ApiGateway {
     gateway.root.addResource("scores").addMethod(HttpMethod.GET, new LambdaIntegration(backend))
     gateway.root.addResource("predictions").addMethod(HttpMethod.POST, new LambdaIntegration(backend))
     gateway.root.addResource("leaderboard").addMethod(HttpMethod.GET, new LambdaIntegration(backend))
-    gateway.root.addResource("match/live").addMethod(HttpMethod.GET, new LambdaIntegration(backend))
-    gateway.root.addResource("match/end").addMethod(HttpMethod.POST, new LambdaIntegration(backend))
-    gateway.root.addResource("match/prediction").addMethod(HttpMethod.GET, new LambdaIntegration(backend))
+    const match = gateway.root.addResource("match")
+    match.addMethod(HttpMethod.GET, new LambdaIntegration(backend))
+    match.addMethod(HttpMethod.POST, new LambdaIntegration(backend))
   }
 }

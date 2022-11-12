@@ -4,8 +4,8 @@ import { ApiGateway } from './resources/apiGateway';
 import { S3Buckets } from './resources/s3';
 import { DynamoTable } from "./resources/dynamodb"
 import { Lambda } from './resources/lambda';
-import { CognitoUserPool } from './resources/cognitoUserPool';
-import { CognitoUserClient } from './resources/cognitoUserClient';
+import { CognitoUserPool } from './resources/cognito/cognitoUserPool';
+import { CognitoUserClient } from './resources/cognito/cognitoUserClient';
 
 export class WorldcupcdkStack extends cdk.Stack {
   

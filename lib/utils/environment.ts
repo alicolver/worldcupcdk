@@ -3,4 +3,4 @@ export enum deploymentStage {
     DEV,
 }
 
-export const STAGE = process.env["STAGE"] === "prod" ? deploymentStage.PROD : deploymentStage.DEV
+export const STAGE = process.env["CI"] === "true" ? deploymentStage.PROD : deploymentStage.DEV

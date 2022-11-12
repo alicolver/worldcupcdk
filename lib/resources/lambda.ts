@@ -33,7 +33,7 @@ export class Lambda {
       runtime: Runtime.NODEJS_16_X,
     }
 
-    this.function = new NodejsFunction(scope, "apihandler", {
+    const apiHandler = new NodejsFunction(scope, "apihandler", {
       entry: join(__dirname, "../../../", "src/api-handler", "handler.ts"),
       ...nodeJsFunctionProps,
     })

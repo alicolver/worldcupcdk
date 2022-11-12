@@ -12,7 +12,7 @@ export const handler = async (
   const endpoint = event.path;
   switch (endpoint) {
     case "/auth/login": {
-      return loginHandler();
+      return await loginHandler();
     }
     default: {
       return {

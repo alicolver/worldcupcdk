@@ -1,3 +1,4 @@
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb"
 import {
   APIGatewayProxyEvent,
   Context,
@@ -26,6 +27,7 @@ export const handler = async (
   context: Context
 ): Promise<APIGatewayProxyResult> => {
   const cognito = new AWS.CognitoIdentityServiceProvider()
+  const dynamoClient = new DynamoDBClient({ region: "eu-west-2" })
 
   const authToken = event.headers["Authorization"]
   if (!authToken) return DEFAULT_ERROR
@@ -48,11 +50,11 @@ export const handler = async (
     return await endMatchHandler(event, cognito)
   }
   case "/match/create": {
-    return await createMatchHandler(event)
+    return await createMatchHandler(event, dynamoClient)
   }
   case "/league/create": {
     const cconfirmedUserId = checkUserId(userId)
-    return await createLeagueHandler(event, cconfirmedUserId)
+    return await createLeagueHandler(event, cconfirmedUserId, dynamoClient)
   }
   case "/league/join": {
     const cconfirmedUserId = checkUserId(userId)

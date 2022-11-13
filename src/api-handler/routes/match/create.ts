@@ -15,9 +15,7 @@ const createMatchSchema = z.object({
 
 const MATCHES_TABLE_NAME = process.env.MATCHES_TABLE_NAME as string
 
-export const createMatchHandler = async (event: APIGatewayProxyEvent) => {
-  console.log("In create match handler")
-  console.log(`input: ${JSON.stringify(event)}`)
+export const createMatchHandler = async (event: APIGatewayProxyEvent, dynamoClient: DynamoDBClient) => {
   try {
     const match = createMatchSchema.safeParse(JSON.parse(event.body!))
     if (!match.success) {
@@ -26,8 +24,6 @@ export const createMatchHandler = async (event: APIGatewayProxyEvent) => {
     const { homeTeam, awayTeam, gameStage, date, time } = match.data
     const matchId = uuidv4()
 
-    console.log(MATCHES_TABLE_NAME)
-    const dynamoClient = new DynamoDBClient({ region: "eu-west-2" })
     const params: PutItemCommandInput = {
       TableName: MATCHES_TABLE_NAME,
       Item: marshall({

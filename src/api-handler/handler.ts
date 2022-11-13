@@ -8,13 +8,14 @@ import AWS from "aws-sdk"
 import { authHandler } from "./routes/auth/handler"
 import { loginHandler } from "./routes/auth/login"
 import { signupHandler } from "./routes/auth/signup"
+import { getUser } from "./routes/auth/utils"
 import { createLeagueHandler } from "./routes/league/create"
 import { joinLeagueHandler } from "./routes/league/join"
 import { createMatchHandler } from "./routes/match/create"
 import { endMatchHandler } from "./routes/match/end"
 import { getPredictionHandler } from "./routes/predictions/get"
 import { postPredictionHandler } from "./routes/predictions/post"
-import { DEFAULT_ERROR } from "./utils/constants"
+import { DEFAULT_ERROR, SERVER_ERROR, UNAUTHORIZED } from "./utils/constants"
 import { convertResponse } from "./utils/response"
 
 const USER_POOL_CLIENT_ID = process.env.USER_POOL_CLIENT_ID as string
@@ -56,16 +57,12 @@ export const routeRequest = async (
     }
   }
 
-  await cognito.initiateAuth({
-    AuthFlow: "USER_SRP_AUTH",
-    ClientId: USER_POOL_CLIENT_ID,
-    AuthParameters: {
-      AccessToken: authToken,
-    }
-  })
+  const result = await getUser(cognito, authToken)
+  if (!result.success) {
+    return UNAUTHORIZED
+  }
 
-  const user = await cognito.getUser({ AccessToken: String(authToken) }).promise()
-  const userId = user.UserAttributes.filter(
+  const userId = result.user!.UserAttributes.filter(
     (attribute) => attribute.Name === "sub"
   )[0].Value
 

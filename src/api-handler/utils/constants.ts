@@ -16,3 +16,8 @@ export const SERVER_ERROR = (error: Error) => {
     }),
   }
 }
+
+export const UNAUTHORIZED = {
+  statusCode: 401,
+  body: JSON.stringify({ message: "User is not authorized" }),
+}

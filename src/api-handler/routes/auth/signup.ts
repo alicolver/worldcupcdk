@@ -1,5 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda"
 import { z } from "zod"
+import { DEFAULT_ERROR } from "../../utils/constants"
 
 const USER_POOL_ID = process.env.USER_POOL_ID as string
 
@@ -15,7 +16,8 @@ export const signupHandler = async (
   cognito: AWS.CognitoIdentityServiceProvider  
 ): Promise<APIGatewayProxyResult> => {
   try {
-    const parsedEvent = signupSchema.safeParse(JSON.parse(event.body!))
+    if (!event.body) return DEFAULT_ERROR
+    const parsedEvent = signupSchema.safeParse(JSON.parse(event.body))
     if (!parsedEvent.success) {
       return {
         statusCode: 400,
@@ -94,11 +96,11 @@ export const signupHandler = async (
       }),
     }
   } catch (error) {
-    return {
+    return error instanceof Error ? {
       statusCode: 500,
       body: JSON.stringify({
-        message: (error as any).messsage || "Internal server error",
+        message: error.message || "Internal server error",
       }),
-    }
+    } : DEFAULT_ERROR
   }
 }

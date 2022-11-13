@@ -20,7 +20,8 @@ export const getPredictionHandler = async (
   cognito: AWS.CognitoIdentityServiceProvider
 ): Promise<APIGatewayProxyResult> => {
   try {
-    const prediction = getPredictionSchema.safeParse(JSON.parse(event.body!))
+    if (!event.body) return DEFAULT_ERROR
+    const prediction = getPredictionSchema.safeParse(JSON.parse(event.body))
     if (!prediction.success) return DEFAULT_ERROR
     const { userId, matchId } = prediction.data
 

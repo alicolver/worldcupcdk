@@ -17,12 +17,14 @@ export const postPredictionHandler = async (
   cognito: AWS.CognitoIdentityServiceProvider
 ): Promise<APIGatewayProxyResult> => {
   try {
-    const prediction = postPredictionSchema.safeParse(JSON.parse(event.body!))
+    if (!event.body) return DEFAULT_ERROR
+    const prediction = postPredictionSchema.safeParse(JSON.parse(event.body))
     if (!prediction.success) return DEFAULT_ERROR
     const { matchId, homeScore, awayScore } = prediction.data
 
     // TODO: we should be able to add this authorization to the api gateway and then pass user information down to lambda
-    const authToken = event.headers.get("Authorization")
+    if (!event.headers) return DEFAULT_ERROR
+    const authToken = event.headers["Authorization"]
     if (!authToken) return DEFAULT_ERROR
 
     const user = await cognito

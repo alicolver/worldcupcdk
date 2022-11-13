@@ -6,9 +6,11 @@ import {
 import AWS from "aws-sdk"
 import { loginHandler } from "./routes/auth/login"
 import { signupHandler } from "./routes/auth/signup"
+import { createMatchHandler } from "./routes/match/create"
 import { endMatchHandler } from "./routes/match/end"
 import { getPredictionHandler } from "./routes/predictions/get"
 import { postPredictionHandler } from "./routes/predictions/post"
+import { DEFAULT_ERROR } from "./utils/constants"
 
 export const handler = async (
   event: APIGatewayProxyEvent,
@@ -25,8 +27,11 @@ export const handler = async (
   case "/auth/signup": {
     return await signupHandler(event, cognito)
   }
-  case "/match": {
+  case "/match/end": {
     return await endMatchHandler(event, cognito)
+  }
+  case "/match/create": {
+    return await createMatchHandler(event)
   }
   case "/predictions": {
     switch (method) {
@@ -36,7 +41,9 @@ export const handler = async (
     case "POST": {
       return await postPredictionHandler(event, cognito)
     }
-    }
+    default: {
+      return DEFAULT_ERROR
+    }}
   }
   default: {
     return {

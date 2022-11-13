@@ -12,7 +12,7 @@ export class DynamoTable {
 
   constructor(scope: Construct, props: DynamoTableProps) {
     this.dynamoTable = new Table(scope, props.tableName, {
-      partitionKey: { name: props.tableName, type: AttributeType.STRING },
+      partitionKey: { name: props.partitionKeyName, type: AttributeType.STRING },
       billingMode: BillingMode.PAY_PER_REQUEST,
       ...(props.sortKeyName && {
         sortKey: { name: props.sortKeyName, type: AttributeType.STRING },

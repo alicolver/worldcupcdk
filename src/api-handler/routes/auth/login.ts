@@ -15,7 +15,8 @@ export const loginHandler = async (
   cognito: AWS.CognitoIdentityServiceProvider
 ): Promise<APIGatewayProxyResult> => {
   try {
-    const parsedEvent = loginSchema.safeParse(JSON.parse(event.body!))
+    if (!event.body) return DEFAULT_ERROR
+    const parsedEvent = loginSchema.safeParse(JSON.parse(event.body))
     if (!parsedEvent.success) {
       return DEFAULT_ERROR
     }
@@ -54,6 +55,6 @@ export const loginHandler = async (
       }),
     }
   } catch (error) {
-    return SERVER_ERROR(error)
+    return (error instanceof Error) ? SERVER_ERROR(error) : DEFAULT_ERROR
   }
 }

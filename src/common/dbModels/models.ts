@@ -31,8 +31,8 @@ export const matchesTableSchema = z.object({
   gameStage: z.enum(["GROUP", "FINAL", "SEMIFINAL", "QUARTERFINAL", "OCTOFINAL"]),
   result: z.optional(z.object({ home: z.number(), away: z.number() })),
   matchDay: z.number(),
-  date: z.string(),
-  time: z.string(),
+  matchDate: z.string(),
+  matchTime: z.string(),
   isFinished: z.boolean(),
 })
 

@@ -10,8 +10,8 @@ const createMatchSchema = z.object({
   homeTeam: z.string(),
   awayTeam: z.string(),
   gameStage: z.enum(["GROUP", "FINAL", "SEMIFINAL", "QUARTERFINAL", "OCTOFINAL"]),
-  date: z.string(),
-  time: z.string(),
+  matchDate: z.string(),
+  matchTime: z.string(),
   matchDay: z.number()
 })
 
@@ -24,7 +24,7 @@ export const createMatchHandler = async (event: APIGatewayProxyEvent, dynamoClie
       console.log(JSON.stringify(match.error))
       return DEFAULT_ERROR
     }
-    const { homeTeam, awayTeam, gameStage, date, time, matchDay } = match.data
+    const { homeTeam, awayTeam, gameStage, matchDate, matchTime, matchDay } = match.data
     const matchId = uuidv4()
 
     const matchItem: MatchesTableItem = {
@@ -32,8 +32,8 @@ export const createMatchHandler = async (event: APIGatewayProxyEvent, dynamoClie
       homeTeam,
       awayTeam,
       gameStage,
-      date,
-      time,
+      matchDate,
+      matchTime,
       matchDay,
       isFinished: false
     }

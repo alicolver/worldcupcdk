@@ -34,3 +34,9 @@ export const matchesTableSchema = z.object({
   time: z.string(),
   isFinished: z.boolean(),
 })
+
+export type MatchesTableItem = z.infer<typeof matchesTableSchema>
+export type PredictionsTableItem = z.infer<typeof predictionsTableSchema>
+export type PointsTableItem = z.infer<typeof pointsTableSchema>
+export type UserTableItem = z.infer<typeof userTableSchema>
+export type LeagueTableItem = z.infer<typeof leagueTableSchema>

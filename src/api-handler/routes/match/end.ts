@@ -1,4 +1,4 @@
-import { APIGatewayProxyResult } from "aws-lambda"
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda"
 import { z } from "zod"
 import { DEFAULT_ERROR } from "../../utils/constants"
 

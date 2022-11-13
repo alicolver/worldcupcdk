@@ -9,6 +9,7 @@ import { signupHandler } from "./routes/auth/signup"
 import { endMatchHandler } from "./routes/match/end"
 import { getPredictionHandler } from "./routes/predictions/get"
 import { postPredictionHandler } from "./routes/predictions/post"
+import { DEFAULT_ERROR } from "./utils/constants"
 
 export const handler = async (
   event: APIGatewayProxyEvent,
@@ -36,7 +37,9 @@ export const handler = async (
     case "POST": {
       return await postPredictionHandler(event, cognito)
     }
-    }
+    default: {
+      return DEFAULT_ERROR
+    }}
   }
   default: {
     return {

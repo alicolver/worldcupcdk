@@ -22,7 +22,7 @@ export const postPredictionHandler = async (
     const { matchId, homeScore, awayScore } = prediction.data
 
     // TODO: we should be able to add this authorization to the api gateway and then pass user information down to lambda
-    const authToken = event.headers.get("Authorization")
+    const authToken = event.headers!["Authorization"]
     if (!authToken) return DEFAULT_ERROR
 
     const user = await cognito

@@ -40,7 +40,7 @@ export const createMatchHandler = async (event: APIGatewayProxyEvent, dynamoClie
     const params: PutItemCommandInput = {
       TableName: MATCHES_TABLE_NAME,
       Item: marshall({
-        matchId, homeTeam, awayTeam, gameStage, date, time
+        matchItem
       }),
     }
     try {

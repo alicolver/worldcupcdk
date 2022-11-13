@@ -1,5 +1,8 @@
 on: [push]
 
+concurrency:
+  group: ${{ github.ref }}
+
 jobs:
   aws_cdk:
     runs-on: "ubuntu-latest"

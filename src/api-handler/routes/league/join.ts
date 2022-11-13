@@ -27,7 +27,7 @@ export const joinLeagueHandler = async (event: APIGatewayProxyEvent, userId: str
     }
 
     const leagueData = await dynamoClient.send(new GetItemCommand(getLeagueParams))
-    const parsedLeagueData = leagueTableSchema.parse(leagueData.Item)
+    const parsedLeagueData = leagueTableSchema.parse(unmarshall(leagueData.Item!))
     const updatedLeagueData = {
       ...parsedLeagueData,
       userIds: [...parsedLeagueData.userIds, userId]

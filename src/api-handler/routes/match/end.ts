@@ -13,7 +13,8 @@ export const endMatchHandler = async (
   cognito: AWS.CognitoIdentityServiceProvider
 ): Promise<APIGatewayProxyResult> => {
   try {
-    const match = endMatchSchema.safeParse(JSON.parse(event.body!))
+    if (!event.body) return DEFAULT_ERROR
+    const match = endMatchSchema.safeParse(JSON.parse(event.body))
     if (!match.success) return DEFAULT_ERROR
     if (!event.headers) return DEFAULT_ERROR
 

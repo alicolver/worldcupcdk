@@ -44,7 +44,8 @@ export const joinLeagueHandler = async (event: APIGatewayProxyEvent, userId: str
       statusCode: 200,
       body: JSON.stringify({ message: "Successfully joined league" })
     }
-  } catch {
+  } catch (error) {
+    console.log(error)
     return DEFAULT_ERROR
   }
 }

@@ -20,7 +20,7 @@ export class ApiGateway {
         ],
         allowMethods: ["GET", "POST", "PUT"],
         allowCredentials: true,
-        allowOrigins: ["http://localhost:3000", "https://alicolver.com"],
+        allowOrigins: ["*"],
       },
       handler: props.lambda.function,
     })

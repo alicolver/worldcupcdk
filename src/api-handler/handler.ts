@@ -30,7 +30,6 @@ export const handler = async (
   const dynamoClient = new DynamoDBClient({ region: "eu-west-2" })
 
   const authToken = event.headers["Authorization"]
-  if (!authToken) return DEFAULT_ERROR
 
   const user = await cognito.getUser({ AccessToken: String(authToken) }).promise()
   const userId = user.UserAttributes.filter(

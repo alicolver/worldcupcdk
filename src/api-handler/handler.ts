@@ -6,6 +6,8 @@ import {
 import AWS from "aws-sdk"
 import { loginHandler } from "./routes/auth/login"
 import { signupHandler } from "./routes/auth/signup"
+import { createLeagueHandler } from "./routes/league/create"
+import { joinLeagueHandler } from "./routes/league/join"
 import { createMatchHandler } from "./routes/match/create"
 import { endMatchHandler } from "./routes/match/end"
 import { getPredictionHandler } from "./routes/predictions/get"
@@ -32,6 +34,12 @@ export const handler = async (
   }
   case "/match/create": {
     return await createMatchHandler(event)
+  }
+  case "/league/create": {
+    return await createLeagueHandler(event)
+  }
+  case "/league/join": {
+    return await joinLeagueHandler(event)
   }
   case "/predictions": {
     switch (method) {

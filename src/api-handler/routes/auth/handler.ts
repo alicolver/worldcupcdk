@@ -1,7 +1,8 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda"
-import { UNKOWN_ENDPOINT } from "../../utils/constants"
+import { UNAUTHORIZED, UNKOWN_ENDPOINT } from "../../utils/constants"
 import { loginHandler } from "./login"
 import { signupHandler } from "./signup"
+import { getUser } from "./utils"
 
 export const authHandler = async (
   event: APIGatewayProxyEvent,
@@ -13,6 +14,20 @@ export const authHandler = async (
   }
   case "/auth/signup": {
     return await signupHandler(event, cognito)
+  }
+  case "/auth/check": {
+    const authToken = event.headers["Authorization"]
+    if (!authToken) {
+      return UNAUTHORIZED
+    }
+    const result = await getUser(cognito, authToken)
+    if (!result.success) {
+      return UNAUTHORIZED
+    }
+    return {
+      statusCode: 200,
+      body: "Success"
+    }
   }
   default: {
     return UNKOWN_ENDPOINT

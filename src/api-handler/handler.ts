@@ -17,6 +17,8 @@ import { postPredictionHandler } from "./routes/predictions/post"
 import { DEFAULT_ERROR } from "./utils/constants"
 import { convertResponse } from "./utils/response"
 
+const USER_POOL_CLIENT_ID = process.env.USER_POOL_CLIENT_ID as string
+
 const checkUserId = (userId: string | undefined): string => {
   if (!userId) {
     throw new Error("userId required for this endpoint")
@@ -52,6 +54,15 @@ export const routeRequest = async (
       body: JSON.stringify({message: "No auth token included in request"})
     }
   }
+
+  await cognito.initiateAuth({
+    AuthFlow: "USER_SRP_AUTH",
+    ClientId: USER_POOL_CLIENT_ID,
+    AuthParameters: {
+      AccessToken: authToken,
+    }
+  })
+
   const user = await cognito.getUser({ AccessToken: String(authToken) }).promise()
   const userId = user.UserAttributes.filter(
     (attribute) => attribute.Name === "sub"

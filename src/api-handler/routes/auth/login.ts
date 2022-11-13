@@ -1,25 +1,25 @@
-import { APIGatewayProxyResult } from "aws-lambda";
-import { z } from "zod";
-import { DEFAULT_ERROR, SERVER_ERROR } from "../../utils/constants";
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda"
+import { z } from "zod"
+import { DEFAULT_ERROR, SERVER_ERROR } from "../../utils/constants"
 
-const USER_POOL_ID = process.env.USER_POOL_ID as string;
-const USER_POOL_CLIENT_ID = process.env.USER_POOL_CLIENT_ID as string;
+const USER_POOL_ID = process.env.USER_POOL_ID as string
+const USER_POOL_CLIENT_ID = process.env.USER_POOL_CLIENT_ID as string
 
 const loginSchema = z.object({
   password: z.string(),
   email: z.string(),
-});
+})
 
 export const loginHandler = async (
-  event: any,
+  event: APIGatewayProxyEvent,
   cognito: AWS.CognitoIdentityServiceProvider
 ): Promise<APIGatewayProxyResult> => {
   try {
-    const parsedEvent = loginSchema.safeParse(JSON.parse(event.body));
+    const parsedEvent = loginSchema.safeParse(JSON.parse(event.body!))
     if (!parsedEvent.success) {
-      return DEFAULT_ERROR;
+      return DEFAULT_ERROR
     }
-    const { email, password } = parsedEvent.data;
+    const { email, password } = parsedEvent.data
     const params = {
       AuthFlow: "ADMIN_NO_SRP_AUTH",
       UserPoolId: USER_POOL_ID,
@@ -28,9 +28,9 @@ export const loginHandler = async (
         USERNAME: email,
         PASSWORD: password,
       },
-    };
+    }
 
-    const response = await cognito.adminInitiateAuth(params).promise();
+    const response = await cognito.adminInitiateAuth(params).promise()
 
     if (!response.AuthenticationResult?.AccessToken) {
       return {
@@ -38,12 +38,12 @@ export const loginHandler = async (
         body: JSON.stringify({
           message: "User not found",
         }),
-      };
+      }
     }
 
     const user = await cognito
       .getUser({ AccessToken: response.AuthenticationResult?.AccessToken })
-      .promise();
+      .promise()
 
     return {
       statusCode: 200,
@@ -52,8 +52,8 @@ export const loginHandler = async (
         token: response.AuthenticationResult?.IdToken,
         user,
       }),
-    };
+    }
   } catch (error) {
     return SERVER_ERROR(error)
   }
-};
+}

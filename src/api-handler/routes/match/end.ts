@@ -1,6 +1,6 @@
-import { APIGatewayProxyResult } from "aws-lambda";
-import { z } from "zod";
-import { DEFAULT_ERROR } from "../../utils/constants";
+import { APIGatewayProxyResult } from "aws-lambda"
+import { z } from "zod"
+import { DEFAULT_ERROR } from "../../utils/constants"
 
 const endMatchSchema = z.object({
   matchid: z.string(),
@@ -9,22 +9,21 @@ const endMatchSchema = z.object({
 })
 
 export const endMatchHandler = async (
-  event: any,
+  event: APIGatewayProxyEvent,
   cognito: AWS.CognitoIdentityServiceProvider
 ): Promise<APIGatewayProxyResult> => {
   try {
-    const match = endMatchSchema.safeParse(JSON.parse(event.body));
-    if (!match.success) return DEFAULT_ERROR;
+    const match = endMatchSchema.safeParse(JSON.parse(event.body!))
+    if (!match.success) return DEFAULT_ERROR
+    if (!event.headers) return DEFAULT_ERROR
 
-    const authToken = event.headers.get('Authorization');
-    if (!authToken) return DEFAULT_ERROR;
+    const authToken = event.headers["Authorization"]
+    if (!authToken) return DEFAULT_ERROR
 
-    const user = await cognito.getUser({
-      AccessToken: event.headers.get('Authorization')!
-    }).promise();
+    const user = await cognito.getUser({AccessToken: String(authToken)}).promise()
 
-    return DEFAULT_ERROR;
+    return DEFAULT_ERROR
   } catch {
-    return DEFAULT_ERROR;
+    return DEFAULT_ERROR
   }
 }

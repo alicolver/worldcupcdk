@@ -32,7 +32,7 @@ export const handler = async (
   const authToken = event.headers["Authorization"]
   if (!authToken) return DEFAULT_ERROR
 
-  const user = await cognito.getUser({AccessToken: String(authToken)}).promise()
+  const user = await cognito.getUser({ AccessToken: String(authToken) }).promise()
   const userId = user.UserAttributes.filter(
     (attribute) => attribute.Name === "sub"
   )[0].Value
@@ -53,12 +53,10 @@ export const handler = async (
     return await createMatchHandler(event, dynamoClient)
   }
   case "/league/create": {
-    const confirmedUserId = checkUserId(userId)
-    return await createLeagueHandler(event, confirmedUserId, dynamoClient)
+    return await createLeagueHandler(event, checkUserId(userId), dynamoClient)
   }
   case "/league/join": {
-    const confirmedUserId = checkUserId(userId)
-    return await joinLeagueHandler(event, confirmedUserId, dynamoClient)
+    return await joinLeagueHandler(event, checkUserId(userId), dynamoClient)
   }
   case "/predictions": {
     switch (method) {
@@ -70,7 +68,8 @@ export const handler = async (
     }
     default: {
       return DEFAULT_ERROR
-    }}
+    }
+    }
   }
   default: {
     return {

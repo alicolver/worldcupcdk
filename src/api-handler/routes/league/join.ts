@@ -1,7 +1,9 @@
-import { DynamoDBClient, GetItemCommand, GetItemCommandInput, PutItemCommandInput } from "@aws-sdk/client-dynamodb"
+import { DynamoDBClient, GetItemCommand, GetItemCommandInput, PutItemCommand, PutItemCommandInput } from "@aws-sdk/client-dynamodb"
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb"
 import { APIGatewayProxyEvent } from "aws-lambda"
+import { parse } from "path"
 import { z } from "zod"
+import { leagueTableSchema } from "../../../common/dbModels/models"
 import { DEFAULT_ERROR } from "../../utils/constants"
 
 const joinLeagueSchema = z.object({
@@ -21,19 +23,21 @@ export const joinLeagueHandler = async (event: APIGatewayProxyEvent, userId: str
 
     const getLeagueParams: GetItemCommandInput = {
       TableName: LEAGUE_TABLE_NAME,
-      Key: marshall({leagueId})
+      Key: marshall({ leagueId })
     }
 
     const leagueData = await dynamoClient.send(new GetItemCommand(getLeagueParams))
-
-    if (!leagueData.Item) {
-      console.log("Cannot find league")
-      return DEFAULT_ERROR
+    const parsedLeagueData = leagueTableSchema.parse(leagueData.Item)
+    const updatedLeagueData = {
+      ...parsedLeagueData,
+      userIds: [...parsedLeagueData.userIds, userId]
     }
-    
-    // parse league item against schema
-    // add userId to userIds
-    // put item in dynamo
+    const postItemParams = {
+      TableName: LEAGUE_TABLE_NAME,
+      Item: marshall(updatedLeagueData)
+    }
+
+    await dynamoClient.send(new PutItemCommand(postItemParams))
 
 
     return {

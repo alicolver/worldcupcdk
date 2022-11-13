@@ -14,6 +14,7 @@ import { endMatchHandler } from "./routes/match/end"
 import { getPredictionHandler } from "./routes/predictions/get"
 import { postPredictionHandler } from "./routes/predictions/post"
 import { DEFAULT_ERROR } from "./utils/constants"
+import { convertResponse } from "./utils/response"
 
 const checkUserId = (userId: string | undefined): string => {
   if (!userId) {
@@ -23,6 +24,13 @@ const checkUserId = (userId: string | undefined): string => {
 }
 
 export const handler = async (
+  event: APIGatewayProxyEvent,
+  context: Context
+): Promise<APIGatewayProxyResult> => {
+  return convertResponse(await routeRequest(event, context))
+}
+
+export const routeRequest = async (
   event: APIGatewayProxyEvent,
   context: Context
 ): Promise<APIGatewayProxyResult> => {
@@ -39,44 +47,44 @@ export const handler = async (
   const endpoint = event.path
   const method = event.httpMethod
   switch (endpoint) {
-  case "/auth/login": {
-    return await loginHandler(event, cognito)
-  }
-  case "/auth/signup": {
-    return await signupHandler(event, cognito)
-  }
-  case "/match/end": {
-    return await endMatchHandler(event, cognito)
-  }
-  case "/match/create": {
-    return await createMatchHandler(event, dynamoClient)
-  }
-  case "/league/create": {
-    return await createLeagueHandler(event, checkUserId(userId), dynamoClient)
-  }
-  case "/league/join": {
-    return await joinLeagueHandler(event, checkUserId(userId), dynamoClient)
-  }
-  case "/predictions": {
-    switch (method) {
-    case "GET": {
-      return await getPredictionHandler(event, cognito)
+    case "/auth/login": {
+      return await loginHandler(event, cognito)
     }
-    case "POST": {
-      return await postPredictionHandler(event, cognito)
+    case "/auth/signup": {
+      return await signupHandler(event, cognito)
+    }
+    case "/match/end": {
+      return await endMatchHandler(event, cognito)
+    }
+    case "/match/create": {
+      return await createMatchHandler(event, dynamoClient)
+    }
+    case "/league/create": {
+      return await createLeagueHandler(event, checkUserId(userId), dynamoClient)
+    }
+    case "/league/join": {
+      return await joinLeagueHandler(event, checkUserId(userId), dynamoClient)
+    }
+    case "/predictions": {
+      switch (method) {
+        case "GET": {
+          return await getPredictionHandler(event, cognito)
+        }
+        case "POST": {
+          return await postPredictionHandler(event, cognito)
+        }
+        default: {
+          return DEFAULT_ERROR
+        }
+      }
     }
     default: {
-      return DEFAULT_ERROR
+      return {
+        statusCode: 500,
+        body: JSON.stringify({
+          message: "Internal server error",
+        }),
+      }
     }
-    }
-  }
-  default: {
-    return {
-      statusCode: 500,
-      body: JSON.stringify({
-        message: "Internal server error",
-      }),
-    }
-  }
   }
 }

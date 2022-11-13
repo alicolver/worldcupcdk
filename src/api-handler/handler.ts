@@ -53,12 +53,12 @@ export const handler = async (
     return await createMatchHandler(event, dynamoClient)
   }
   case "/league/create": {
-    const cconfirmedUserId = checkUserId(userId)
-    return await createLeagueHandler(event, cconfirmedUserId, dynamoClient)
+    const confirmedUserId = checkUserId(userId)
+    return await createLeagueHandler(event, confirmedUserId, dynamoClient)
   }
   case "/league/join": {
-    const cconfirmedUserId = checkUserId(userId)
-    return await joinLeagueHandler(event, cconfirmedUserId)
+    const confirmedUserId = checkUserId(userId)
+    return await joinLeagueHandler(event, confirmedUserId, dynamoClient)
   }
   case "/predictions": {
     switch (method) {

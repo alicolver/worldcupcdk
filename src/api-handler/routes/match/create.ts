@@ -22,7 +22,8 @@ export const createMatchHandler = async (event: APIGatewayProxyEvent, dynamoClie
     const match = createMatchSchema.safeParse(JSON.parse(event.body!))
     if (!match.success) {
       console.log(JSON.stringify(match.error))
-      return DEFAULT_ERROR}
+      return DEFAULT_ERROR
+    }
     const { homeTeam, awayTeam, gameStage, date, time, matchDay } = match.data
     const matchId = uuidv4()
 
@@ -39,9 +40,7 @@ export const createMatchHandler = async (event: APIGatewayProxyEvent, dynamoClie
 
     const params: PutItemCommandInput = {
       TableName: MATCHES_TABLE_NAME,
-      Item: marshall({
-        matchItem
-      }),
+      Item: marshall(matchItem),
     }
     try {
       await dynamoClient.send(new PutItemCommand(params))
@@ -49,7 +48,7 @@ export const createMatchHandler = async (event: APIGatewayProxyEvent, dynamoClie
       console.log(error)
       return DEFAULT_ERROR
     }
-    
+
 
     return {
       statusCode: 200,

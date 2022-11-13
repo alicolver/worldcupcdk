@@ -14,6 +14,7 @@ import { endMatchHandler } from "./routes/match/end"
 import { getPredictionHandler } from "./routes/predictions/get"
 import { postPredictionHandler } from "./routes/predictions/post"
 import { DEFAULT_ERROR } from "./utils/constants"
+import { convertResponse } from "./utils/response"
 
 const checkUserId = (userId: string | undefined): string => {
   if (!userId) {
@@ -23,6 +24,13 @@ const checkUserId = (userId: string | undefined): string => {
 }
 
 export const handler = async (
+  event: APIGatewayProxyEvent,
+  context: Context
+): Promise<APIGatewayProxyResult> => {
+  return convertResponse(await routeRequest(event, context))
+}
+
+export const routeRequest = async (
   event: APIGatewayProxyEvent,
   context: Context
 ): Promise<APIGatewayProxyResult> => {

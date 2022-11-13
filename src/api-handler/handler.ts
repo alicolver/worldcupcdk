@@ -44,7 +44,7 @@ export const routeRequest = async (
   if (endpoint === "/auth/login") {
     return await loginHandler(event, cognito)
   }
-  if (endpoint === "auth/signup") {
+  if (endpoint === "/auth/signup") {
     return await signupHandler(event, cognito)
   }
 

@@ -12,6 +12,7 @@ import { createLeagueHandler } from "./routes/league/create"
 import { joinLeagueHandler } from "./routes/league/join"
 import { createMatchHandler } from "./routes/match/create"
 import { endMatchHandler } from "./routes/match/end"
+import { getUpcomingMatchHandler } from "./routes/match/getUpcoming"
 import { getPredictionHandler } from "./routes/predictions/get"
 import { postPredictionHandler } from "./routes/predictions/post"
 import { DEFAULT_ERROR } from "./utils/constants"
@@ -75,6 +76,9 @@ export const routeRequest = async (
   }
   case "/match/create": {
     return await createMatchHandler(event, dynamoClient)
+  }
+  case "/match/get-upcoming": {
+    return await getUpcomingMatchHandler(event, checkUserId(userId), dynamoClient)
   }
   case "/league/create": {
     return await createLeagueHandler(event, checkUserId(userId), dynamoClient)

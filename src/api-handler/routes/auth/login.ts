@@ -50,7 +50,7 @@ export const loginHandler = async (
       statusCode: 200,
       body: JSON.stringify({
         message: "Success",
-        token: response.AuthenticationResult?.IdToken,
+        token: response.AuthenticationResult?.AccessToken,
         user,
       }),
     }

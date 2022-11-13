@@ -5,6 +5,7 @@ import {
   APIGatewayProxyResult,
 } from "aws-lambda"
 import AWS from "aws-sdk"
+import { authHandler } from "./routes/auth/handler"
 import { loginHandler } from "./routes/auth/login"
 import { signupHandler } from "./routes/auth/signup"
 import { createLeagueHandler } from "./routes/league/create"
@@ -15,6 +16,8 @@ import { getPredictionHandler } from "./routes/predictions/get"
 import { postPredictionHandler } from "./routes/predictions/post"
 import { DEFAULT_ERROR } from "./utils/constants"
 import { convertResponse } from "./utils/response"
+
+const USER_POOL_CLIENT_ID = process.env.USER_POOL_CLIENT_ID as string
 
 const checkUserId = (userId: string | undefined): string => {
   if (!userId) {
@@ -40,23 +43,28 @@ export const routeRequest = async (
   const endpoint = event.path
   const method = event.httpMethod
 
-  // unauthenticated endpoints
-  if (endpoint === "/auth/login") {
-    return await loginHandler(event, cognito)
-  }
-  if (endpoint === "/auth/signup") {
-    return await signupHandler(event, cognito)
+  if (endpoint.startsWith("/auth")) {
+    return await authHandler(event, cognito)
   }
 
   const authToken = event.headers["Authorization"]
   console.log(authToken)
   if (!authToken) {
     return {
-      statusCode: 404,
-      body: JSON.stringify({ message: "No auth token included in request" })
+      statusCode: 304,
+      body: JSON.stringify({message: "No auth token included in request"})
     }
   }
-  const user = await cognito.getUser({ AccessToken: authToken }).promise()
+
+  await cognito.initiateAuth({
+    AuthFlow: "USER_SRP_AUTH",
+    ClientId: USER_POOL_CLIENT_ID,
+    AuthParameters: {
+      AccessToken: authToken,
+    }
+  })
+
+  const user = await cognito.getUser({ AccessToken: String(authToken) }).promise()
   const userId = user.UserAttributes.filter(
     (attribute) => attribute.Name === "sub"
   )[0].Value

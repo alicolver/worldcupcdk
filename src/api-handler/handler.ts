@@ -29,22 +29,30 @@ export const handler = async (
   const cognito = new AWS.CognitoIdentityServiceProvider()
   const dynamoClient = new DynamoDBClient({ region: "eu-west-2" })
 
-  const authToken = event.headers["Authorization"]
+  const endpoint = event.path
+  const method = event.httpMethod
 
+  // unauthenticated endpoints
+  if (endpoint === "/auth/login") {
+    return await loginHandler(event, cognito)
+  }
+  if (endpoint === "auth/signup") {
+    return await signupHandler(event, cognito)
+  }
+
+  const authToken = event.headers["Authorization"]
+  if (!authToken) {
+    return {
+      statusCode: 404,
+      body: JSON.stringify({message: "No auth token included in request"})
+    }
+  }
   const user = await cognito.getUser({ AccessToken: String(authToken) }).promise()
   const userId = user.UserAttributes.filter(
     (attribute) => attribute.Name === "sub"
   )[0].Value
 
-  const endpoint = event.path
-  const method = event.httpMethod
   switch (endpoint) {
-  case "/auth/login": {
-    return await loginHandler(event, cognito)
-  }
-  case "/auth/signup": {
-    return await signupHandler(event, cognito)
-  }
   case "/match/end": {
     return await endMatchHandler(event, cognito)
   }

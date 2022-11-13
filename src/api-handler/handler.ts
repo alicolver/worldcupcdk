@@ -14,11 +14,26 @@ import { getPredictionHandler } from "./routes/predictions/get"
 import { postPredictionHandler } from "./routes/predictions/post"
 import { DEFAULT_ERROR } from "./utils/constants"
 
+const checkUserId = (userId: string | undefined): string => {
+  if (!userId) {
+    throw new Error("userId required for this endpoint")
+  }
+  return userId
+}
+
 export const handler = async (
   event: APIGatewayProxyEvent,
   context: Context
 ): Promise<APIGatewayProxyResult> => {
   const cognito = new AWS.CognitoIdentityServiceProvider()
+
+  const authToken = event.headers["Authorization"]
+  if (!authToken) return DEFAULT_ERROR
+
+  const user = await cognito.getUser({AccessToken: String(authToken)}).promise()
+  const userId = user.UserAttributes.filter(
+    (attribute) => attribute.Name === "sub"
+  )[0].Value
 
   const endpoint = event.path
   const method = event.httpMethod
@@ -36,10 +51,12 @@ export const handler = async (
     return await createMatchHandler(event)
   }
   case "/league/create": {
-    return await createLeagueHandler(event)
+    const cconfirmedUserId = checkUserId(userId)
+    return await createLeagueHandler(event, cconfirmedUserId)
   }
   case "/league/join": {
-    return await joinLeagueHandler(event)
+    const cconfirmedUserId = checkUserId(userId)
+    return await joinLeagueHandler(event, cconfirmedUserId)
   }
   case "/predictions": {
     switch (method) {

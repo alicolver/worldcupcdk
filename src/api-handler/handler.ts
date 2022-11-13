@@ -49,13 +49,14 @@ export const routeRequest = async (
   }
 
   const authToken = event.headers["Authorization"]
+  console.log(authToken)
   if (!authToken) {
     return {
       statusCode: 404,
-      body: JSON.stringify({message: "No auth token included in request"})
+      body: JSON.stringify({ message: "No auth token included in request" })
     }
   }
-  const user = await cognito.getUser({ AccessToken: String(authToken) }).promise()
+  const user = await cognito.getUser({ AccessToken: authToken }).promise()
   const userId = user.UserAttributes.filter(
     (attribute) => attribute.Name === "sub"
   )[0].Value

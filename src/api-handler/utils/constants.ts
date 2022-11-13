@@ -3,6 +3,11 @@ export const DEFAULT_ERROR = {
   body: JSON.stringify({ message: "Invalid input" }),
 }
 
+export const UNKOWN_ENDPOINT = {
+  statusCode: 404,
+  body: JSON.stringify({ message: "Unknown endpoint" }),
+}
+
 export const SERVER_ERROR = (error: Error) => {
   return {
     statusCode: 500,

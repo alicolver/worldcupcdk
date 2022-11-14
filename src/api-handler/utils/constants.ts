@@ -2,7 +2,9 @@ import express from "express"
 
 interface errorResponse {
   statusCode: number
-  body: any
+  body: {
+    message: string
+  }
 }
 
 export const DEFAULT_ERROR = {

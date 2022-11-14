@@ -1,4 +1,4 @@
-import { APIGatewayProxyEvent } from "aws-lambda"
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda"
 import { z } from "zod"
 import { DATABASE_ERROR, NO_BODY_ERROR, PARSING_ERROR } from "../../utils/constants"
 import { v4 as uuidv4 } from "uuid"
@@ -16,7 +16,7 @@ const createMatchSchema = z.object({
   matchDay: z.number()
 })
 
-export const createMatchHandler = async (event: APIGatewayProxyEvent, dynamoClient: DynamoDBClient) => {
+export const createMatchHandler = async (event: APIGatewayProxyEvent, dynamoClient: DynamoDBClient): Promise<APIGatewayProxyResult> => {
   if (!event.body) return NO_BODY_ERROR
   const match = createMatchSchema.safeParse(JSON.parse(event.body))
   if (!match.success) return PARSING_ERROR

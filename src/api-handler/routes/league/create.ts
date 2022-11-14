@@ -1,28 +1,27 @@
-import { APIGatewayProxyEvent } from "aws-lambda"
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda"
 import { z } from "zod"
 import { DATABASE_ERROR, NO_BODY_ERROR, PARSING_ERROR } from "../../utils/constants"
-import { v4 as uuidv4 } from "uuid"
 import { DynamoDBClient, PutItemCommand, PutItemCommandInput } from "@aws-sdk/client-dynamodb"
 import { marshall } from "@aws-sdk/util-dynamodb"
 
 const createLeagueSchema = z.object({
-  leagueName: z.string(),
+  leagueId: z.string(),
 })
 
 const LEAGUE_TABLE_NAME = process.env.LEAGUE_TABLE_NAME as string
 
-export const createLeagueHandler = async (event: APIGatewayProxyEvent, userId: string, dynamoClient: DynamoDBClient) => {
+export const createLeagueHandler = async (event: APIGatewayProxyEvent, userId: string, dynamoClient: DynamoDBClient): Promise<APIGatewayProxyResult> => {
 
   if (!event.body) return NO_BODY_ERROR
   const league = createLeagueSchema.safeParse(JSON.parse(event.body))
   if (!league.success) return PARSING_ERROR
-  const { leagueName } = league.data
-  const leagueId = uuidv4()
+  const { leagueId } = league.data
 
+  // TODO: Need to do a conditional write to make sure league doesn't already exist
   const params: PutItemCommandInput = {
     TableName: LEAGUE_TABLE_NAME,
     Item: marshall({
-      leagueId, leagueName, userIds: [userId]
+      leagueId, userIds: [userId]
     }),
   }
 

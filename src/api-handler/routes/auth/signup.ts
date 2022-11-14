@@ -4,6 +4,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda"
 import { z } from "zod"
 import { UserTableItem } from "../../../common/dbModels/models"
 import { DATABASE_ERROR, NO_BODY_ERROR, PARSING_ERROR } from "../../utils/constants"
+import { joinLeague } from "../league/join"
 import { checkUserId } from "./utils"
 
 const USER_POOL_ID = process.env.USER_POOL_ID as string
@@ -74,9 +75,13 @@ export const signupHandler = async (
     (attribute) => attribute.Name === "sub"
   )[0].Value)
 
+  const joinGlobalLeagueResult = await joinLeague("global", userId, dynamoClient)
+
+  console.log(`Join league message: ${joinGlobalLeagueResult.message}`)
+
   const userItem: UserTableItem = {
     userId,
-    leagueIds: []
+    leagueIds: joinGlobalLeagueResult.success ? ["global"] : []
   }
 
   const createUserLeageuMappingParams = {

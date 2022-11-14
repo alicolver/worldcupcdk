@@ -17,43 +17,39 @@ const createMatchSchema = z.object({
 })
 
 export const createMatchHandler = async (event: APIGatewayProxyEvent, dynamoClient: DynamoDBClient) => {
-  try {
-    if (!event.body) return DEFAULT_ERROR
-    const match = createMatchSchema.safeParse(JSON.parse(event.body))
-    if (!match.success) {
-      console.log(JSON.stringify(match.error))
-      return DEFAULT_ERROR
-    }
-    const { homeTeam, awayTeam, gameStage, matchDate, matchTime, matchDay } = match.data
-    const matchId = uuidv4()
-
-    const matchItem: MatchesTableItem = {
-      matchId,
-      homeTeam,
-      awayTeam,
-      gameStage,
-      matchDate,
-      matchTime,
-      matchDay,
-      isFinished: false
-    }
-
-    const params: PutItemCommandInput = {
-      TableName: MATCHES_TABLE_NAME,
-      Item: marshall(matchItem),
-    }
-    try {
-      await dynamoClient.send(new PutItemCommand(params))
-    } catch (error) {
-      console.log(error)
-      return DATABASE_ERROR
-    }
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ message: "Successfully created match" })
-    }
-  } catch {
+  if (!event.body) return DEFAULT_ERROR
+  const match = createMatchSchema.safeParse(JSON.parse(event.body))
+  if (!match.success) {
+    console.log(JSON.stringify(match.error))
     return DEFAULT_ERROR
+  }
+  const { homeTeam, awayTeam, gameStage, matchDate, matchTime, matchDay } = match.data
+  const matchId = uuidv4()
+
+  const matchItem: MatchesTableItem = {
+    matchId,
+    homeTeam,
+    awayTeam,
+    gameStage,
+    matchDate,
+    matchTime,
+    matchDay,
+    isFinished: false
+  }
+
+  const params: PutItemCommandInput = {
+    TableName: MATCHES_TABLE_NAME,
+    Item: marshall(matchItem),
+  }
+  try {
+    await dynamoClient.send(new PutItemCommand(params))
+  } catch (error) {
+    console.log(error)
+    return DATABASE_ERROR
+  }
+
+  return {
+    statusCode: 200,
+    body: JSON.stringify({ message: "Successfully created match" })
   }
 }

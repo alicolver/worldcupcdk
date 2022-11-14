@@ -14,47 +14,43 @@ export const loginHandler = async (
   event: APIGatewayProxyEvent,
   cognito: AWS.CognitoIdentityServiceProvider
 ): Promise<APIGatewayProxyResult> => {
-  try {
-    if (!event.body) return DEFAULT_ERROR
-    const parsedEvent = loginSchema.safeParse(JSON.parse(event.body))
-    if (!parsedEvent.success) {
-      return DEFAULT_ERROR
-    }
-    const { email, password } = parsedEvent.data
-    const params = {
-      AuthFlow: "ADMIN_NO_SRP_AUTH",
-      UserPoolId: USER_POOL_ID,
-      ClientId: USER_POOL_CLIENT_ID,
-      AuthParameters: {
-        USERNAME: email,
-        PASSWORD: password,
-      },
-    }
+  if (!event.body) return DEFAULT_ERROR
+  const parsedEvent = loginSchema.safeParse(JSON.parse(event.body))
+  if (!parsedEvent.success) {
+    return DEFAULT_ERROR
+  }
+  const { email, password } = parsedEvent.data
+  const params = {
+    AuthFlow: "ADMIN_NO_SRP_AUTH",
+    UserPoolId: USER_POOL_ID,
+    ClientId: USER_POOL_CLIENT_ID,
+    AuthParameters: {
+      USERNAME: email,
+      PASSWORD: password,
+    },
+  }
 
-    const response = await cognito.adminInitiateAuth(params).promise()
+  const response = await cognito.adminInitiateAuth(params).promise()
 
-    if (!response.AuthenticationResult?.AccessToken) {
-      return {
-        statusCode: 500,
-        body: JSON.stringify({
-          message: "User not found",
-        }),
-      }
-    }
-
-    const user = await cognito
-      .getUser({ AccessToken: response.AuthenticationResult?.AccessToken })
-      .promise()
-
+  if (!response.AuthenticationResult?.AccessToken) {
     return {
-      statusCode: 200,
+      statusCode: 500,
       body: JSON.stringify({
-        message: "Success",
-        token: response.AuthenticationResult?.AccessToken,
-        user,
+        message: "User not found",
       }),
     }
-  } catch (error) {
-    return (error instanceof Error) ? SERVER_ERROR(error) : DEFAULT_ERROR
+  }
+
+  const user = await cognito
+    .getUser({ AccessToken: response.AuthenticationResult?.AccessToken })
+    .promise()
+
+  return {
+    statusCode: 200,
+    body: JSON.stringify({
+      message: "Success",
+      token: response.AuthenticationResult?.AccessToken,
+      user,
+    }),
   }
 }

@@ -31,3 +31,8 @@ export const PARSING_ERROR = {
   statusCode: 400,
   body: JSON.stringify({ message: "Error parsing request body" }),
 }
+
+export const UNKNOWN_SERVER_ERROR = {
+  statusCode: 500,
+  body: JSON.stringify({ message: "Unknown server error" })
+}

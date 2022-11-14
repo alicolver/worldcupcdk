@@ -16,7 +16,7 @@ import { endMatchHandler } from "./routes/match/end"
 import { getUpcomingMatchHandler } from "./routes/match/getUpcoming"
 import { getPredictionHandler } from "./routes/predictions/get"
 import { postPredictionHandler } from "./routes/predictions/post"
-import { DEFAULT_ERROR, SERVER_ERROR, UNAUTHORIZED } from "./utils/constants"
+import { DEFAULT_ERROR, SERVER_ERROR, UNAUTHORIZED, UNKNOWN_SERVER_ERROR } from "./utils/constants"
 import { convertResponse } from "./utils/response"
 
 const USER_POOL_CLIENT_ID = process.env.USER_POOL_CLIENT_ID as string
@@ -32,7 +32,13 @@ export const handler = async (
   event: APIGatewayProxyEvent,
   context: Context
 ): Promise<APIGatewayProxyResult> => {
-  return convertResponse(await routeRequest(event, context))
+  try {
+    return convertResponse(await routeRequest(event, context))
+  } catch (error) {
+    console.log(error)
+    return UNKNOWN_SERVER_ERROR
+  }
+  
 }
 
 export const routeRequest = async (
@@ -69,7 +75,7 @@ export const routeRequest = async (
 
   switch (endpoint) {
   case "/match/end": {
-    return await endMatchHandler(event, cognito)
+    return await endMatchHandler(event, dynamoClient)
   }
   case "/match/create": {
     return await createMatchHandler(event, dynamoClient)

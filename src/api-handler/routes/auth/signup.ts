@@ -3,10 +3,12 @@ import { marshall } from "@aws-sdk/util-dynamodb"
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda"
 import { z } from "zod"
 import { UserTableItem } from "../../../common/dbModels/models"
-import { DATABASE_ERROR, NO_BODY_ERROR, PARSING_ERROR } from "../../utils/constants"
+import { DATABASE_ERROR, NO_BODY_ERROR, PARSING_ERROR, returnError } from "../../utils/constants"
 import { createLeague } from "../league/create"
 import { joinLeague } from "../league/join"
 import { checkUserId } from "./utils"
+import express from "express"
+import { cognito, dynamoClient } from "../../utils/clients"
 
 const USER_POOL_ID = process.env.USER_POOL_ID as string
 const USERS_TABLE_NAME = process.env.USERS_TABLE_NAME as string
@@ -19,14 +21,9 @@ const signupSchema = z.object({
   familyName: z.string(),
 })
 
-export const signupHandler = async (
-  event: APIGatewayProxyEvent,
-  cognito: AWS.CognitoIdentityServiceProvider,
-  dynamoClient: DynamoDBClient
-): Promise<APIGatewayProxyResult> => {
-  if (!event.body) return NO_BODY_ERROR
-  const parsedEvent = signupSchema.safeParse(JSON.parse(event.body))
-  if (!parsedEvent.success) return PARSING_ERROR
+export const signupHandler: express.Handler = async (req, res) => {
+  const parsedEvent = signupSchema.safeParse(req.body)
+  if (!parsedEvent.success) return returnError(res, PARSING_ERROR)
   const { givenName, familyName, email, password } = parsedEvent.data
   const params = {
     UserPoolId: USER_POOL_ID,
@@ -56,20 +53,16 @@ export const signupHandler = async (
     response = await cognito.adminCreateUser(params).promise()
   } catch (error) {
     console.log(JSON.stringify(error))
-    return {
-      statusCode: 500,
-      body: JSON.stringify({
-        message: "Error creating user in cognito",
-      }),
-    }
+    res.status(500)
+    return res.json({
+      message: "Error creating user in cognito",
+    })
   }
   if (!response.User || !response.User.Attributes) {
-    return {
-      statusCode: 500,
-      body: JSON.stringify({
-        message: "User not returned from cognito",
-      }),
-    }
+    res.status(500)
+    return res.json({
+      message: "User not returned from cognito",
+    })
   }
 
   console.log(`Created user: ${JSON.stringify(response.User)}`)
@@ -91,7 +84,7 @@ export const signupHandler = async (
     }))
   } catch (error) {
     console.log(error)
-    return DATABASE_ERROR
+    return returnError(res, DATABASE_ERROR)
   }
 
 
@@ -120,18 +113,14 @@ export const signupHandler = async (
   try {
     await cognito.adminSetUserPassword(paramsForSetPass).promise()
   } catch (error) {
-    return {
-      statusCode: 500,
-      body: JSON.stringify({
-        message: "Error setting user password in cognito",
-      }),
-    }
-  }  
-
-  return {
-    statusCode: 200,
-    body: JSON.stringify({
-      message: "User registration successful",
-    }),
+    res.status(500)
+    return res.json({
+      message: "Error setting user password in cognito",
+    })
   }
+
+  res.status(200)
+  return res.json({
+    message: "User registration successful",
+  })
 }

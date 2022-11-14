@@ -1,11 +1,18 @@
+import express from "express"
+
+interface errorResponse {
+  statusCode: number
+  body: any
+}
+
 export const DEFAULT_ERROR = {
   statusCode: 400,
-  body: JSON.stringify({ message: "Invalid input" }),
+  body: { message: "Invalid input" },
 }
 
 export const DATABASE_ERROR = {
   statusCode: 424,
-  body: JSON.stringify({ message: "Error accessing database" }),
+  body: { message: "Error accessing database" },
 }
 
 export const LEAGUE_EXISTS_ERROR = {
@@ -15,34 +22,41 @@ export const LEAGUE_EXISTS_ERROR = {
 
 export const UNKOWN_ENDPOINT = {
   statusCode: 404,
-  body: JSON.stringify({ message: "Unknown endpoint" }),
+  body: { message: "Unknown endpoint" },
 }
 
 export const SERVER_ERROR = (error: Error) => {
   return {
     statusCode: 500,
-    body: JSON.stringify({
+    body: {
       message: error.message
-    }),
+    },
   }
 }
 
-export const UNAUTHORIZED = {
+export const UNAUTHORIZED: errorResponse = {
   statusCode: 401,
-  body: JSON.stringify({ message: "User is not authorized" }),
+  body: {
+    message: "User is not authorized"
+  },
 }
 
 export const PARSING_ERROR = {
   statusCode: 400,
-  body: JSON.stringify({ message: "Error parsing request body" }),
+  body: { message: "Error parsing request body" },
 }
 
 export const UNKNOWN_SERVER_ERROR = {
   statusCode: 500,
-  body: JSON.stringify({ message: "Unknown server error" })
+  body: { message: "Unknown server error" }
 }
 
 export const NO_BODY_ERROR = {
   statusCode: 400,
-  body: JSON.stringify({ message: "No body included in request" })
+  body: { message: "No body included in request" }
+}
+
+export const returnError = (res: express.Response, error: errorResponse) => {
+  res.status(error.statusCode)
+  res.json(error.body)
 }

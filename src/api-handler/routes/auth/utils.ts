@@ -36,3 +36,9 @@ export const checkUserId = (userId: string | undefined): string => {
   }
   return userId
 }
+
+export const getUserId = (user: AWS.CognitoIdentityServiceProvider.GetUserResponse): string => {
+  return checkUserId(user.UserAttributes.filter(
+    (attribute) => attribute.Name === "sub"
+  )[0].Value)
+}

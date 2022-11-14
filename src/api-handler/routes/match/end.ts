@@ -2,8 +2,10 @@ import { DynamoDBClient, UpdateItemCommand } from "@aws-sdk/client-dynamodb"
 import { marshall } from "@aws-sdk/util-dynamodb"
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda"
 import { z } from "zod"
-import { DATABASE_ERROR, NO_BODY_ERROR, PARSING_ERROR } from "../../utils/constants"
+import { DATABASE_ERROR, NO_BODY_ERROR, PARSING_ERROR, returnError } from "../../utils/constants"
 import { MATCHES_TABLE_NAME } from "../../utils/database"
+import express from "express"
+import { dynamoClient } from "../../utils/clients"
 
 const endMatchSchema = z.object({
   matchid: z.string(),
@@ -12,36 +14,30 @@ const endMatchSchema = z.object({
 })
 
 // TODO: Wrap with admin
-export const endMatchHandler = async (
-  event: APIGatewayProxyEvent,
-  dynamoClient: DynamoDBClient
-): Promise<APIGatewayProxyResult> => {
-  if (!event.body) return NO_BODY_ERROR
-  const match = endMatchSchema.safeParse(JSON.parse(event.body))
-  if (!match.success) return PARSING_ERROR
+export const endMatchHandler: express.Handler = async (req, res) => {
+  const match = endMatchSchema.safeParse(req.body)
+  if (!match.success) return returnError(res, PARSING_ERROR)
 
   const matchData = match.data
 
   try {
-    await dynamoClient.send(new UpdateItemCommand({ 
+    await dynamoClient.send(new UpdateItemCommand({
       TableName: MATCHES_TABLE_NAME,
       Key: {
         matchId: { S: matchData.matchid }
       },
       UpdateExpression: "set homeScore = :x, set awayScore = :y, set isFinished: :z",
       ExpressionAttributeValues: marshall({
-        ":x":  matchData.homeScore,
-        ":y":  matchData.awayScore,
-        ":z":  true
+        ":x": matchData.homeScore,
+        ":y": matchData.awayScore,
+        ":z": true
       })
     }))
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ message: "Successfully ended match" })
-    } 
   } catch (error) {
     console.log(error)
-    return DATABASE_ERROR
+    return returnError(res, DATABASE_ERROR)
   }
+
+  res.status(200)
+  res.json({ message: "Successfully ended match" })
 }

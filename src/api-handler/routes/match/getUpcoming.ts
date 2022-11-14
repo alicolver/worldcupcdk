@@ -1,12 +1,13 @@
-import { DynamoDBClient, ScanCommand, ScanCommandInput } from "@aws-sdk/client-dynamodb"
-import { APIGatewayProxyEvent } from "aws-lambda"
+import { ScanCommand, ScanCommandInput } from "@aws-sdk/client-dynamodb"
 import { matchesTableSchema } from "../../../common/dbModels/models"
 import { unmarshall } from "@aws-sdk/util-dynamodb"
 import { addDays, getFormattedDate } from "../../utils/date"
 import { MATCHES_TABLE_NAME } from "../../utils/database"
-import { DATABASE_ERROR } from "../../utils/constants"
+import { DATABASE_ERROR, returnError } from "../../utils/constants"
+import express from "express"
+import { dynamoClient } from "../../utils/clients"
 
-export const getUpcomingMatchHandler = async (event: APIGatewayProxyEvent, userId: string, dynamoClient: DynamoDBClient) => {
+export const getUpcomingMatchHandler: express.Handler = async (req, res) => {
   const today = getFormattedDate(new Date())
   const tomorrow = getFormattedDate(addDays(new Date(), 1))
   const params: ScanCommandInput = {
@@ -22,12 +23,10 @@ export const getUpcomingMatchHandler = async (event: APIGatewayProxyEvent, userI
     const matches = await dynamoClient.send(new ScanCommand(params))
     const parsedMatches = matches.Items?.map(item => matchesTableSchema.parse(unmarshall(item)))
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ message: "Successfully fetched matches", data: parsedMatches })
-    }
+    res.status(200)
+    res.json({ message: "Successfully fetched matches", data: parsedMatches })
   } catch (error) {
     console.log(error)
-    return DATABASE_ERROR
+    return returnError(res, DATABASE_ERROR)
   }
 }

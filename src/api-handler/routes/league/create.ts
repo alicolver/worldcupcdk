@@ -1,9 +1,11 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda"
 import { z } from "zod"
-import { NO_BODY_ERROR, PARSING_ERROR } from "../../utils/constants"
+import { PARSING_ERROR, returnError } from "../../utils/constants"
 import { DynamoDBClient, PutItemCommand, PutItemCommandInput } from "@aws-sdk/client-dynamodb"
 import { marshall } from "@aws-sdk/util-dynamodb"
+import express from "express"
 import { addLeagueIdToUser } from "./utils"
+import { getUserId } from "../auth/utils"
+import { dynamoClient } from "../../utils/clients"
 
 const createLeagueSchema = z.object({
   leagueName: z.string(),
@@ -27,24 +29,20 @@ export const createLeague = async (leagueName: string, userId: string, dynamoCli
   await addLeagueIdToUser(leagueId, userId, dynamoClient)
 }
 
-export const createLeagueHandler = async (event: APIGatewayProxyEvent, userId: string, dynamoClient: DynamoDBClient): Promise<APIGatewayProxyResult> => {
-
-  if (!event.body) return NO_BODY_ERROR
-  const league = createLeagueSchema.safeParse(JSON.parse(event.body))
-  if (!league.success) return PARSING_ERROR
+export const createLeagueHandler: express.Handler = async (req, res) => {
+  const league = createLeagueSchema.safeParse(req.body)
+  if (!league.success) return returnError(res, PARSING_ERROR)
   const { leagueName } = league.data
+  const userId = getUserId(req.user!)
 
   try {
     await createLeague(leagueName, userId, dynamoClient)
   } catch (error) {
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ message: "Error creating league" })
-    }
+    console.log(error)
+    res.status(500)
+    return res.json({ message: "Error creating league" })
   }
 
-  return {
-    statusCode: 200,
-    body: JSON.stringify({ message: "Successfully created league" })
-  }
+  res.status(200)
+  res.json({ message: "Successfully created league" })
 }

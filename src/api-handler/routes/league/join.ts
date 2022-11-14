@@ -1,8 +1,10 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb"
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda"
 import { z } from "zod"
-import { NO_BODY_ERROR, PARSING_ERROR } from "../../utils/constants"
+import { PARSING_ERROR, returnError } from "../../utils/constants"
 import { addLeagueIdToUser, addUserIdToLeague } from "./utils"
+import express from "express"
+import { dynamoClient } from "../../utils/clients"
+import { getUserId } from "../auth/utils"
 
 const joinLeagueSchema = z.object({
   leagueId: z.string(),
@@ -24,14 +26,14 @@ export const joinLeague = async (leagueId: string, userId: string, dynamoClient:
   }
 }
 
-export const joinLeagueHandler = async (event: APIGatewayProxyEvent, userId: string, dynamoClient: DynamoDBClient): Promise<APIGatewayProxyResult> => {
-  if (!event.body) return NO_BODY_ERROR
-  const parsedJoinLeague = joinLeagueSchema.safeParse(JSON.parse(event.body))
-  if (!parsedJoinLeague.success) return PARSING_ERROR
+export const joinLeagueHandler: express.Handler = async (req, res) => {
+  const parsedJoinLeague = joinLeagueSchema.safeParse(req.body)
+  if (!parsedJoinLeague.success) return returnError(res, PARSING_ERROR)
   const { leagueId } = parsedJoinLeague.data
+  const userId = getUserId(req.user!)
+
   const joinLeagueResult = await joinLeague(leagueId, userId, dynamoClient)
-  return {
-    statusCode: joinLeagueResult.success ? 200 : 500,
-    body: JSON.stringify({ message: joinLeagueResult.message })
-  }
+
+  res.status(joinLeagueResult.success ? 200 : 500)
+  res.json({ message: joinLeagueResult.message })
 }

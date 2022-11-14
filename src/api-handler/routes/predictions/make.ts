@@ -1,9 +1,11 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda"
-import { DynamoDBClient, PutItemCommand } from "@aws-sdk/client-dynamodb"
+import { PutItemCommand } from "@aws-sdk/client-dynamodb"
 import { z } from "zod"
-import { DATABASE_ERROR, NO_BODY_ERROR, PARSING_ERROR } from "../../utils/constants"
+import { DATABASE_ERROR, PARSING_ERROR, returnError } from "../../utils/constants"
 import { marshall } from "@aws-sdk/util-dynamodb"
 import { PredictionsTableItem } from "../../../common/dbModels/models"
+import express from "express"
+import { getUserId } from "../auth/utils"
+import { dynamoClient } from "../../utils/clients"
 
 const postPredictionSchema = z.object({
   matchId: z.string(),
@@ -13,15 +15,11 @@ const postPredictionSchema = z.object({
 
 const PREDICTIONS_TABLE_NAME = process.env.PREDICTIONS_TABLE_NAME as string
 
-export const postPredictionHandler = async (
-  event: APIGatewayProxyEvent,
-  userId: string,
-  dynamoClient: DynamoDBClient,
-): Promise<APIGatewayProxyResult> => {
-  if (!event.body) return NO_BODY_ERROR
-  const prediction = postPredictionSchema.safeParse(JSON.parse(event.body))
-  if (!prediction.success) return PARSING_ERROR
+export const makePredictionHandler: express.Handler = async (req, res) => {
+  const prediction = postPredictionSchema.safeParse(req.body)
+  if (!prediction.success) return returnError(res, PARSING_ERROR)
   const { matchId, homeScore, awayScore } = prediction.data
+  const userId = getUserId(req.user!)
 
   const predictionItem: PredictionsTableItem = {
     userId,
@@ -39,12 +37,9 @@ export const postPredictionHandler = async (
     await dynamoClient.send(new PutItemCommand(params))
   } catch (error) {
     console.log(error)
-    return DATABASE_ERROR
+    return returnError(res, DATABASE_ERROR)
   }
 
-
-  return {
-    statusCode: 200,
-    body: JSON.stringify({ message: "Succesfully entered prediction" }),
-  }
+  res.status(200)
+  res.json({ message: "Succesfully entered prediction" })
 }

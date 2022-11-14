@@ -1,12 +1,12 @@
 import {
   BatchGetItemCommand,
   BatchGetItemCommandInput,
-  DynamoDBClient
 } from "@aws-sdk/client-dynamodb"
 import { unmarshall } from "@aws-sdk/util-dynamodb"
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda"
 import { z } from "zod"
-import { DATABASE_ERROR, NO_BODY_ERROR, PARSING_ERROR } from "../../utils/constants"
+import { DATABASE_ERROR, PARSING_ERROR, returnError } from "../../utils/constants"
+import express from "express"
+import { dynamoClient } from "../../utils/clients"
 
 const getPredictionSchema = z.object({
   userId: z.string(),
@@ -15,13 +15,9 @@ const getPredictionSchema = z.object({
 
 const PREDICTIONS_TABLE_NAME = process.env.PREDICTIONS_TABLE_NAME as string
 
-export const getPredictionHandler = async (
-  event: APIGatewayProxyEvent,
-  dynamoClient: DynamoDBClient,
-): Promise<APIGatewayProxyResult> => {
-  if (!event.body) return NO_BODY_ERROR
-  const getPredictions = getPredictionSchema.safeParse(JSON.parse(event.body))
-  if (!getPredictions.success) return PARSING_ERROR
+export const getPredictionHandler: express.Handler = async (req, res) => {
+  const getPredictions = getPredictionSchema.safeParse(req.body)
+  if (!getPredictions.success) return returnError(res, PARSING_ERROR)
 
   const getPredictionsData = getPredictions.data
   const { userId, matchIds } = getPredictionsData
@@ -39,25 +35,21 @@ export const getPredictionHandler = async (
     const data = await dynamoClient.send(new BatchGetItemCommand(getBatchParams))
     if (!data.Responses) {
       console.log("No responses")
-      return {
-        statusCode: 200,
-        body: JSON.stringify({
-          message: "No predictions for matches"
-        })
-      }
-    }
-    
-    const parsedResponses = data.Responses[PREDICTIONS_TABLE_NAME].map(response => unmarshall(response))
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify({
-        message:  "Successfully fetched predictions",
-        body: parsedResponses
+      res.status(200)
+      return res.json({
+        message: "No predictions for matches"
       })
     }
+
+    const parsedResponses = data.Responses[PREDICTIONS_TABLE_NAME].map(response => unmarshall(response))
+
+    res.status(200)
+    res.json({
+      message: "Successfully fetched predictions",
+      body: parsedResponses
+    })
   } catch (error) {
     console.log(error)
-    return DATABASE_ERROR
+    return returnError(res, DATABASE_ERROR)
   }
 }

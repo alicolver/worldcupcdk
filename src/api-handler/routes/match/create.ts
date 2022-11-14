@@ -1,11 +1,12 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda"
 import { z } from "zod"
-import { DATABASE_ERROR, NO_BODY_ERROR, PARSING_ERROR } from "../../utils/constants"
+import { DATABASE_ERROR, PARSING_ERROR, returnError } from "../../utils/constants"
 import { v4 as uuidv4 } from "uuid"
-import { DynamoDBClient, PutItemCommand, PutItemCommandInput } from "@aws-sdk/client-dynamodb"
+import { PutItemCommand, PutItemCommandInput } from "@aws-sdk/client-dynamodb"
 import { marshall } from "@aws-sdk/util-dynamodb"
 import { MatchesTableItem } from "../../../common/dbModels/models"
 import { MATCHES_TABLE_NAME } from "../../utils/database"
+import express from "express"
+import { dynamoClient } from "../../utils/clients"
 
 const createMatchSchema = z.object({
   homeTeam: z.string(),
@@ -16,10 +17,9 @@ const createMatchSchema = z.object({
   matchDay: z.number()
 })
 
-export const createMatchHandler = async (event: APIGatewayProxyEvent, dynamoClient: DynamoDBClient): Promise<APIGatewayProxyResult> => {
-  if (!event.body) return NO_BODY_ERROR
-  const match = createMatchSchema.safeParse(JSON.parse(event.body))
-  if (!match.success) return PARSING_ERROR
+export const createMatchHandler: express.Handler = async (req, res) => {
+  const match = createMatchSchema.safeParse(req.body)
+  if (!match.success) return returnError(res, PARSING_ERROR)
   const { homeTeam, awayTeam, gameStage, matchDate, matchTime, matchDay } = match.data
   const matchId = uuidv4()
 
@@ -42,11 +42,9 @@ export const createMatchHandler = async (event: APIGatewayProxyEvent, dynamoClie
     await dynamoClient.send(new PutItemCommand(params))
   } catch (error) {
     console.log(error)
-    return DATABASE_ERROR
+    return returnError(res, DATABASE_ERROR)
   }
 
-  return {
-    statusCode: 200,
-    body: JSON.stringify({ message: "Successfully created match" })
-  }
+  res.status(200)
+  res.json({ message: "Successfully created match" })
 }

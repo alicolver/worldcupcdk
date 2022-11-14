@@ -5,7 +5,7 @@ import {
 } from "aws-lambda"
 import AWS from "aws-sdk"
 import { authHandler } from "./routes/auth/handler"
-import { getUser } from "./routes/auth/utils"
+import { checkUserId, getUser } from "./routes/auth/utils"
 import { createLeagueHandler } from "./routes/league/create"
 import { joinLeagueHandler } from "./routes/league/join"
 import { createMatchHandler } from "./routes/match/create"
@@ -15,13 +15,6 @@ import { getPredictionHandler } from "./routes/predictions/fetch"
 import { postPredictionHandler } from "./routes/predictions/make"
 import { UNAUTHORIZED, UNKNOWN_SERVER_ERROR } from "./utils/constants"
 import { convertResponse } from "./utils/response"
-
-const checkUserId = (userId: string | undefined): string => {
-  if (!userId) {
-    throw new Error("userId required for this endpoint")
-  }
-  return userId
-}
 
 export const handler = async (
   event: APIGatewayProxyEvent,
@@ -44,7 +37,7 @@ export const routeRequest = async (
   const endpoint = event.path
 
   if (endpoint.startsWith("/auth")) {
-    return await authHandler(event, cognito)
+    return await authHandler(event, cognito, dynamoClient)
   }
 
   const authToken = event.headers["Authorization"]

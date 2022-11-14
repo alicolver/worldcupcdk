@@ -28,5 +28,11 @@ export const getUser = async (cognito: AWS.CognitoIdentityServiceProvider, token
       success: false,
     }
   }
+}
 
+export const checkUserId = (userId: string | undefined): string => {
+  if (!userId) {
+    throw new Error("userId required for this endpoint")
+  }
+  return userId
 }

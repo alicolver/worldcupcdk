@@ -79,6 +79,8 @@ export const signupHandler = async (
 
   const userItem: UserTableItem = {
     userId,
+    givenName,
+    familyName,
     leagueIds: []
   }
 

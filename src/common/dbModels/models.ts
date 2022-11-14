@@ -8,6 +8,8 @@ export const leagueTableSchema = z.object({
 
 export const userTableSchema = z.object({
   userId: z.string(),
+  givenName: z.string(),
+  familyName: z.string(),
   leagueIds: z.array(z.string())
 })
 

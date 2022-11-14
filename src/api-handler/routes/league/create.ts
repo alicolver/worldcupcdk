@@ -1,6 +1,6 @@
 import { z } from "zod"
 import { PARSING_ERROR, returnError } from "../../utils/constants"
-import { DynamoDBClient, PutItemCommand, PutItemCommandInput } from "@aws-sdk/client-dynamodb"
+import { PutItemCommand, PutItemCommandInput } from "@aws-sdk/client-dynamodb"
 import { marshall } from "@aws-sdk/util-dynamodb"
 import express from "express"
 import { addLeagueIdToUser } from "./utils"
@@ -13,7 +13,7 @@ const createLeagueSchema = z.object({
 
 const LEAGUE_TABLE_NAME = process.env.LEAGUE_TABLE_NAME as string
 
-export const createLeague = async (leagueName: string, userId: string, dynamoClient: DynamoDBClient) => {
+export const createLeague = async (leagueName: string, userId: string) => {
   const leagueId = leagueName.toLowerCase().replace(/\s+/g, " ").replace(" ", "-")
 
   const params: PutItemCommandInput = {
@@ -36,7 +36,7 @@ export const createLeagueHandler: express.Handler = async (req, res) => {
   const userId = getUserId(req.user!)
 
   try {
-    await createLeague(leagueName, userId, dynamoClient)
+    await createLeague(leagueName, userId)
   } catch (error) {
     console.log(error)
     res.status(500)

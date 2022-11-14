@@ -95,7 +95,7 @@ export const signupHandler: express.Handler = async (req, res) => {
 
   if (!globalLeague.Item) {
     console.log("Global league does not exist yet")
-    createLeague("Global", userId, dynamoClient)
+    createLeague("Global", userId)
   } else {
     console.log("Found global league yet")
     const joinGlobalLeagueResult = await joinLeague("global", userId, dynamoClient)

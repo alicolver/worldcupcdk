@@ -14,6 +14,9 @@ export const addLeagueIdToUser = async (leagueId: string, userId: string, dynamo
     throw new Error("User not found")
   }
   const parsedUser = userTableSchema.parse(unmarshall(user.Item))
+  if (parsedUser.leagueIds.includes(leagueId)) {
+    throw new Error("League is already in user")
+  }
   const updatedUser: UserTableItem = { ...parsedUser, leagueIds: [...parsedUser.leagueIds, leagueId] }
   await dynamoClient.send(new PutItemCommand({
     TableName: USERS_TABLE_NAME,
@@ -30,6 +33,9 @@ export const addUserIdToLeague = async (leagueId: string, userId: string, dynamo
     throw new Error("League not found")
   }
   const parsedLeague = leagueTableSchema.parse(unmarshall(league.Item))
+  if (parsedLeague.userIds.includes(userId)) {
+    throw new Error("User is already in league")
+  }
   const updatedLeague: LeagueTableItem = { ...parsedLeague, userIds: [...parsedLeague.userIds, userId]}
   await dynamoClient.send(new PutItemCommand({
     TableName: LEAGUE_TABLE_NAME,

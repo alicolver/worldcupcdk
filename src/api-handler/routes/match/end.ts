@@ -2,7 +2,7 @@ import { DynamoDBClient, UpdateItemCommand } from "@aws-sdk/client-dynamodb"
 import { marshall } from "@aws-sdk/util-dynamodb"
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda"
 import { z } from "zod"
-import { DATABASE_ERROR, DEFAULT_ERROR, PARSING_ERROR } from "../../utils/constants"
+import { DATABASE_ERROR, NO_BODY_ERROR, PARSING_ERROR } from "../../utils/constants"
 import { MATCHES_TABLE_NAME } from "../../utils/database"
 
 const endMatchSchema = z.object({
@@ -16,7 +16,7 @@ export const endMatchHandler = async (
   event: APIGatewayProxyEvent,
   dynamoClient: DynamoDBClient
 ): Promise<APIGatewayProxyResult> => {
-  if (!event.body) return DEFAULT_ERROR
+  if (!event.body) return NO_BODY_ERROR
   const match = endMatchSchema.safeParse(JSON.parse(event.body))
   if (!match.success) return PARSING_ERROR
 

@@ -36,3 +36,8 @@ export const UNKNOWN_SERVER_ERROR = {
   statusCode: 500,
   body: JSON.stringify({ message: "Unknown server error" })
 }
+
+export const NO_BODY_ERROR = {
+  statusCode: 400,
+  body: JSON.stringify({ message: "No body included in request" })
+}

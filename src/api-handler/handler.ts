@@ -6,17 +6,15 @@ import {
 } from "aws-lambda"
 import AWS from "aws-sdk"
 import { authHandler } from "./routes/auth/handler"
-import { loginHandler } from "./routes/auth/login"
-import { signupHandler } from "./routes/auth/signup"
 import { getUser } from "./routes/auth/utils"
 import { createLeagueHandler } from "./routes/league/create"
 import { joinLeagueHandler } from "./routes/league/join"
 import { createMatchHandler } from "./routes/match/create"
 import { endMatchHandler } from "./routes/match/end"
 import { getUpcomingMatchHandler } from "./routes/match/getUpcoming"
-import { getPredictionHandler } from "./routes/predictions/get"
-import { postPredictionHandler } from "./routes/predictions/post"
-import { DEFAULT_ERROR, SERVER_ERROR, UNAUTHORIZED, UNKNOWN_SERVER_ERROR } from "./utils/constants"
+import { getPredictionHandler } from "./routes/predictions/fetch"
+import { postPredictionHandler } from "./routes/predictions/make"
+import { DEFAULT_ERROR, UNAUTHORIZED, UNKNOWN_SERVER_ERROR } from "./utils/constants"
 import { convertResponse } from "./utils/response"
 
 const USER_POOL_CLIENT_ID = process.env.USER_POOL_CLIENT_ID as string
@@ -89,18 +87,11 @@ export const routeRequest = async (
   case "/league/join": {
     return await joinLeagueHandler(event, checkUserId(userId), dynamoClient)
   }
-  case "/predictions": {
-    switch (method) {
-    case "GET": {
-      return await getPredictionHandler(event, dynamoClient, cognito)
-    }
-    case "POST": {
-      return await postPredictionHandler(event, dynamoClient, cognito)
-    }
-    default: {
-      return DEFAULT_ERROR
-    }
-    }
+  case "/predictions/fetch": {
+    return await getPredictionHandler(event, dynamoClient)
+  }
+  case "/predictions/make": {
+    return await postPredictionHandler(event, dynamoClient, cognito)
   }
   default: {
     return {

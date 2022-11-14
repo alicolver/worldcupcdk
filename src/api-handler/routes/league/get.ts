@@ -7,15 +7,15 @@ import { NO_BODY_ERROR, PARSING_ERROR } from "../../utils/constants"
 
 const LEAGUE_TABLE_NAME = process.env.LEAGUE_TABLE_NAME as string
 
-const getUsersInLeagueSchema = z.object({
+const getLeagueSchema = z.object({
   leagueId: z.string(),
 })
 
 export const getLeagueHandler = async (event: APIGatewayProxyEvent, dynamoClient: DynamoDBClient): Promise<APIGatewayProxyResult> => {
   if (!event.body) return NO_BODY_ERROR
-  const parsedGetUserInLeague = getUsersInLeagueSchema.safeParse(JSON.parse(event.body))
-  if (!parsedGetUserInLeague.success) return PARSING_ERROR
-  const { leagueId } = parsedGetUserInLeague.data
+  const parsedGetLeague = getLeagueSchema.safeParse(JSON.parse(event.body))
+  if (!parsedGetLeague.success) return PARSING_ERROR
+  const { leagueId } = parsedGetLeague.data
   const leagueData = await dynamoClient.send(new GetItemCommand({
     TableName: LEAGUE_TABLE_NAME,
     Key: marshall({leagueId})

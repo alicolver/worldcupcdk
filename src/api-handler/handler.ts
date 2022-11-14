@@ -14,6 +14,7 @@ import { endMatchHandler } from "./routes/match/end"
 import { getUpcomingMatchHandler } from "./routes/match/getUpcoming"
 import { getPredictionHandler } from "./routes/predictions/fetch"
 import { postPredictionHandler } from "./routes/predictions/make"
+import { getUserHandler } from "./routes/user/get"
 import { UNAUTHORIZED, UNKNOWN_SERVER_ERROR } from "./utils/constants"
 import { convertResponse } from "./utils/response"
 
@@ -83,6 +84,9 @@ export const routeRequest = async (
   }
   case "/predictions/make": {
     return await postPredictionHandler(event, checkUserId(userId), dynamoClient)
+  }
+  case "/user/get": {
+    return await getUserHandler(event, dynamoClient)
   }
   default: {
     return {

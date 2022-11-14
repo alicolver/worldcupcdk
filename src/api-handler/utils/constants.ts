@@ -3,6 +3,11 @@ export const DEFAULT_ERROR = {
   body: JSON.stringify({ message: "Invalid input" }),
 }
 
+export const DATABASE_ERROR = {
+  statusCode: 424,
+  body: JSON.stringify({ message: "Error accessing database" }),
+}
+
 export const UNKOWN_ENDPOINT = {
   statusCode: 404,
   body: JSON.stringify({ message: "Unknown endpoint" }),
@@ -20,4 +25,9 @@ export const SERVER_ERROR = (error: Error) => {
 export const UNAUTHORIZED = {
   statusCode: 401,
   body: JSON.stringify({ message: "User is not authorized" }),
+}
+
+export const PARSING_ERROR = {
+  statusCode: 400,
+  body: JSON.stringify({ message: "Error parsing request body" }),
 }

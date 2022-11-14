@@ -4,7 +4,6 @@ type ResponseHeaders = {
   [header: string]: string | number | boolean;
 }
 
-
 export const convertResponse = (result: APIGatewayProxyResult) => {
   return createResponse(result.statusCode, result.body, result.headers)
 }

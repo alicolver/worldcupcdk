@@ -1,10 +1,11 @@
 import { APIGatewayProxyEvent } from "aws-lambda"
 import { z } from "zod"
-import { DEFAULT_ERROR } from "../../utils/constants"
+import { DATABASE_ERROR, DEFAULT_ERROR } from "../../utils/constants"
 import { v4 as uuidv4 } from "uuid"
 import { DynamoDBClient, PutItemCommand, PutItemCommandInput } from "@aws-sdk/client-dynamodb"
 import { marshall } from "@aws-sdk/util-dynamodb"
 import { MatchesTableItem } from "../../../common/dbModels/models"
+import { MATCHES_TABLE_NAME } from "../../utils/database"
 
 const createMatchSchema = z.object({
   homeTeam: z.string(),
@@ -15,11 +16,10 @@ const createMatchSchema = z.object({
   matchDay: z.number()
 })
 
-const MATCHES_TABLE_NAME = process.env.MATCHES_TABLE_NAME as string
-
 export const createMatchHandler = async (event: APIGatewayProxyEvent, dynamoClient: DynamoDBClient) => {
   try {
-    const match = createMatchSchema.safeParse(JSON.parse(event.body!))
+    if (!event.body) return DEFAULT_ERROR
+    const match = createMatchSchema.safeParse(JSON.parse(event.body))
     if (!match.success) {
       console.log(JSON.stringify(match.error))
       return DEFAULT_ERROR
@@ -46,9 +46,8 @@ export const createMatchHandler = async (event: APIGatewayProxyEvent, dynamoClie
       await dynamoClient.send(new PutItemCommand(params))
     } catch (error) {
       console.log(error)
-      return DEFAULT_ERROR
+      return DATABASE_ERROR
     }
-
 
     return {
       statusCode: 200,

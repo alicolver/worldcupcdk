@@ -63,7 +63,7 @@ export const routeRequest = async (
     return UNAUTHORIZED
   }
 
-  const userId = result.user!.UserAttributes.filter(
+  const userId = result.user?.UserAttributes.filter(
     (attribute) => attribute.Name === "sub"
   )[0].Value
 
@@ -86,10 +86,10 @@ export const routeRequest = async (
   case "/predictions": {
     switch (method) {
     case "GET": {
-      return await getPredictionHandler(event, cognito)
+      return await getPredictionHandler(event, dynamoClient, cognito)
     }
     case "POST": {
-      return await postPredictionHandler(event, cognito)
+      return await postPredictionHandler(event, dynamoClient, cognito)
     }
     default: {
       return DEFAULT_ERROR

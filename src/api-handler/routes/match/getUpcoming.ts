@@ -5,8 +5,7 @@ import { matchesTableSchema } from "../../../common/dbModels/models"
 import { DEFAULT_ERROR } from "../../utils/constants"
 import { unmarshall } from "@aws-sdk/util-dynamodb"
 import { addDays, getFormattedDate } from "../../utils/date"
-
-const MATCHES_TABLE_NAME = process.env.MATCHES_TABLE_NAME
+import { MATCHES_TABLE_NAME } from "../../utils/database"
 
 export const getUpcomingMatchHandler = async (event: APIGatewayProxyEvent, userId: string, dynamoClient: DynamoDBClient) => {
   try {

@@ -17,6 +17,7 @@ const TABLE_NAME = process.env.TABLE_NAME as string
 
 export const getPredictionHandler = async (
   event: APIGatewayProxyEvent,
+  dynamoClient: DynamoDBClient,
   cognito: AWS.CognitoIdentityServiceProvider
 ): Promise<APIGatewayProxyResult> => {
   try {
@@ -30,8 +31,6 @@ export const getPredictionHandler = async (
       sortKey: matchId,
     }
 
-    // TODO: get the region from somewhere
-    const dynamoClient = new DynamoDBClient({ region: "eu-west-2 " })
     const params: GetItemCommandInput = {
       TableName: TABLE_NAME,
       Key: marshall(getPredictionQuery),

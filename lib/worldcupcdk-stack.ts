@@ -1,5 +1,4 @@
 import * as cdk from "aws-cdk-lib"
-import { Table } from "aws-cdk-lib/aws-dynamodb"
 import { Construct } from "constructs"
 import { ApiGateway } from "./resources/apiGateway"
 import { S3Buckets } from "./resources/s3"

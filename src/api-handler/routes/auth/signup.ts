@@ -1,14 +1,16 @@
-import { DynamoDBClient, PutItemCommand } from "@aws-sdk/client-dynamodb"
+import { DynamoDBClient, GetItemCommand, PutItemCommand } from "@aws-sdk/client-dynamodb"
 import { marshall } from "@aws-sdk/util-dynamodb"
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda"
 import { z } from "zod"
 import { UserTableItem } from "../../../common/dbModels/models"
 import { DATABASE_ERROR, NO_BODY_ERROR, PARSING_ERROR } from "../../utils/constants"
+import { createLeague } from "../league/create"
 import { joinLeague } from "../league/join"
 import { checkUserId } from "./utils"
 
 const USER_POOL_ID = process.env.USER_POOL_ID as string
 const USERS_TABLE_NAME = process.env.USERS_TABLE_NAME as string
+const LEAGUE_TABLE_NAME = process.env.LEAGUE_TABLE_NAME as string
 
 const signupSchema = z.object({
   password: z.string().min(6),
@@ -75,26 +77,34 @@ export const signupHandler = async (
     (attribute) => attribute.Name === "sub"
   )[0].Value)
 
-  const joinGlobalLeagueResult = await joinLeague("global", userId, dynamoClient)
-
-  console.log(`Join league message: ${joinGlobalLeagueResult.message}`)
-
   const userItem: UserTableItem = {
     userId,
-    leagueIds: joinGlobalLeagueResult.success ? ["global"] : []
-  }
-
-  const createUserLeageuMappingParams = {
-    TableName: USERS_TABLE_NAME,
-    Item: marshall(userItem)
+    leagueIds: []
   }
 
   try {
-    await dynamoClient.send(new PutItemCommand(createUserLeageuMappingParams))
+    await dynamoClient.send(new PutItemCommand({
+      TableName: USERS_TABLE_NAME,
+      Item: marshall(userItem)
+    }))
   } catch (error) {
     console.log(error)
     return DATABASE_ERROR
   }
+
+
+
+  const globalLeague = await dynamoClient.send(new GetItemCommand({
+    TableName: LEAGUE_TABLE_NAME,
+    Key: marshall({ leagueId: "global" })
+  }))
+
+  if (!globalLeague.Item) {
+    createLeague("Gloabl", userId, dynamoClient)
+  } else {
+    const joinGlobalLeagueResult = await joinLeague("global", userId, dynamoClient)
+    console.log(`Join league message: ${joinGlobalLeagueResult.message}`)
+  }  
 
   const paramsForSetPass = {
     Password: password,

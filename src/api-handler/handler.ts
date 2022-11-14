@@ -36,7 +36,7 @@ export const handler = async (
     console.log(error)
     return UNKNOWN_SERVER_ERROR
   }
-  
+
 }
 
 export const routeRequest = async (
@@ -47,7 +47,6 @@ export const routeRequest = async (
   const dynamoClient = new DynamoDBClient({ region: "eu-west-2" })
 
   const endpoint = event.path
-  const method = event.httpMethod
 
   if (endpoint.startsWith("/auth")) {
     return await authHandler(event, cognito)
@@ -58,7 +57,7 @@ export const routeRequest = async (
   if (!authToken) {
     return {
       statusCode: 304,
-      body: JSON.stringify({message: "No auth token included in request"})
+      body: JSON.stringify({ message: "No auth token included in request" })
     }
   }
 
@@ -91,7 +90,7 @@ export const routeRequest = async (
     return await getPredictionHandler(event, dynamoClient)
   }
   case "/predictions/make": {
-    return await postPredictionHandler(event, dynamoClient, cognito)
+    return await postPredictionHandler(event, checkUserId(userId), dynamoClient)
   }
   default: {
     return {

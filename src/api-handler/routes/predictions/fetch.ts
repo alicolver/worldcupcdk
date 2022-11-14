@@ -3,6 +3,7 @@ import {
   BatchGetItemCommandInput,
   DynamoDBClient
 } from "@aws-sdk/client-dynamodb"
+import { unmarshall } from "@aws-sdk/util-dynamodb"
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda"
 import { z } from "zod"
 import { DATABASE_ERROR, NO_BODY_ERROR, PARSING_ERROR } from "../../utils/constants"
@@ -30,8 +31,7 @@ export const getPredictionHandler = async (
   const getBatchParams: BatchGetItemCommandInput = {
     RequestItems: {
       [PREDICTIONS_TABLE_NAME]: {
-        Keys: queryKeys,
-        ProjectionExpression: "ATTRIBUTE_NAME",
+        Keys: queryKeys
       },
     },
   }
@@ -46,11 +46,14 @@ export const getPredictionHandler = async (
         })
       }
     }
+    
+    const parsedResponses = data.Responses[PREDICTIONS_TABLE_NAME].map(response => unmarshall(response))
+
     return {
       statusCode: 200,
       body: JSON.stringify({
         message:  "Successfully fetched predictions",
-        body: data.Responses[PREDICTIONS_TABLE_NAME]
+        body: parsedResponses
       })
     }
   } catch (error) {

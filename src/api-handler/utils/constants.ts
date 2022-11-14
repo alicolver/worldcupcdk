@@ -8,6 +8,11 @@ export const DATABASE_ERROR = {
   body: JSON.stringify({ message: "Error accessing database" }),
 }
 
+export const LEAGUE_EXISTS_ERROR = {
+  statusCode: 424,
+  body: JSON.stringify({ message: "League already exists" }),
+}
+
 export const UNKOWN_ENDPOINT = {
   statusCode: 404,
   body: JSON.stringify({ message: "Unknown endpoint" }),

@@ -2,6 +2,7 @@ import { z } from "zod"
 
 export const leagueTableSchema = z.object({
   leagueId: z.string(),
+  leagueName: z.string(),
   userIds: z.array(z.string())
 })
 

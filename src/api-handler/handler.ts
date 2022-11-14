@@ -7,6 +7,7 @@ import AWS from "aws-sdk"
 import { authHandler } from "./routes/auth/handler"
 import { checkUserId, getUser } from "./routes/auth/utils"
 import { createLeagueHandler } from "./routes/league/create"
+import { getLeagueHandler } from "./routes/league/get"
 import { joinLeagueHandler } from "./routes/league/join"
 import { createMatchHandler } from "./routes/match/create"
 import { endMatchHandler } from "./routes/match/end"
@@ -73,6 +74,9 @@ export const routeRequest = async (
   }
   case "/league/join": {
     return await joinLeagueHandler(event, checkUserId(userId), dynamoClient)
+  }
+  case "/league/get": {
+    return await getLeagueHandler(event, dynamoClient)
   }
   case "/predictions/fetch": {
     return await getPredictionHandler(event, dynamoClient)

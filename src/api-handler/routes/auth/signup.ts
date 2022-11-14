@@ -61,13 +61,35 @@ export const signupHandler = async (
       }),
     }
   }
-  if (!response.User) {
+  if (!response.User || !response.User.Attributes) {
     return {
       statusCode: 500,
       body: JSON.stringify({
         message: "User not returned from cognito",
       }),
     }
+  }
+
+  console.log(`Created user: ${JSON.stringify(response.User)}`)
+  const userId = checkUserId(response.User.Attributes.filter(
+    (attribute) => attribute.Name === "sub"
+  )[0].Value)
+
+  const userItem: UserTableItem = {
+    userId,
+    leagueIds: []
+  }
+
+  const createUserLeageuMappingParams = {
+    TableName: USERS_TABLE_NAME,
+    Item: marshall(userItem)
+  }
+
+  try {
+    await dynamoClient.send(new PutItemCommand(createUserLeageuMappingParams))
+  } catch (error) {
+    console.log(error)
+    return DATABASE_ERROR
   }
 
   const paramsForSetPass = {
@@ -86,59 +108,7 @@ export const signupHandler = async (
         message: "Error setting user password in cognito",
       }),
     }
-  }
-
-  const accessTokenParams = {
-    AuthFlow: "ADMIN_NO_SRP_AUTH",
-    UserPoolId: USER_POOL_ID, 
-    ClientId: USER_POOL_CLIENT_ID,
-    AuthParameters: {
-      USERNAME: email,
-      PASSWORD: password
-    }
-  }
-
-  try {
-    const initiateAuthResponse = await cognito.adminInitiateAuth(accessTokenParams).promise()
-    if (!initiateAuthResponse.AuthenticationResult?.AccessToken) {
-      return {
-        statusCode: 500,
-        body: JSON.stringify({
-          message: "Cannot initiate auth",
-        }),
-      }
-    }
-
-    const result = await getUser(cognito, initiateAuthResponse.AuthenticationResult?.AccessToken)
-    if (!result.success) {
-      return UNAUTHORIZED
-    }
-
-    const userId = checkUserId(result.user?.UserAttributes.filter(
-      (attribute) => attribute.Name === "sub"
-    )[0].Value)
-
-    const userItem: UserTableItem = {
-      userId,
-      leagueIds: []
-    }
-
-    const createUserLeageuMappingParams = {
-      TableName: USERS_TABLE_NAME,
-      Item: marshall(userItem)
-    }
-
-    try {
-      await dynamoClient.send(new PutItemCommand(createUserLeageuMappingParams))
-    } catch (error) {
-      console.log(error)
-      return DATABASE_ERROR
-    }
-  } catch (error) {
-    console.log(error)
-    return {statusCode: 500, body: JSON.stringify({message: "Unable to create user league mapping item"})}
-  }
-  
+  }  
 
   return {
     statusCode: 200,

@@ -3,11 +3,10 @@ import { marshall } from "@aws-sdk/util-dynamodb"
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda"
 import { z } from "zod"
 import { UserTableItem } from "../../../common/dbModels/models"
-import { DATABASE_ERROR, NO_BODY_ERROR, PARSING_ERROR, UNAUTHORIZED } from "../../utils/constants"
-import { checkUserId, getUser } from "./utils"
+import { DATABASE_ERROR, NO_BODY_ERROR, PARSING_ERROR } from "../../utils/constants"
+import { checkUserId } from "./utils"
 
 const USER_POOL_ID = process.env.USER_POOL_ID as string
-const USER_POOL_CLIENT_ID = process.env.USER_POOL_CLIENT_ID as string
 const USERS_TABLE_NAME = process.env.USERS_TABLE_NAME as string
 
 const signupSchema = z.object({

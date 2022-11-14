@@ -23,7 +23,7 @@ export const endMatchHandler = async (
   const matchData = match.data
 
   try {
-    dynamoClient.send(new UpdateItemCommand({ 
+    await dynamoClient.send(new UpdateItemCommand({ 
       TableName: MATCHES_TABLE_NAME,
       Key: {
         matchId: { S: matchData.matchid }

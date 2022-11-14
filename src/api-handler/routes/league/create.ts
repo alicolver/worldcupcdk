@@ -1,6 +1,6 @@
 import { APIGatewayProxyEvent } from "aws-lambda"
 import { z } from "zod"
-import { DEFAULT_ERROR } from "../../utils/constants"
+import { DATABASE_ERROR, NO_BODY_ERROR, PARSING_ERROR } from "../../utils/constants"
 import { v4 as uuidv4 } from "uuid"
 import { DynamoDBClient, PutItemCommand, PutItemCommandInput } from "@aws-sdk/client-dynamodb"
 import { marshall } from "@aws-sdk/util-dynamodb"
@@ -13,15 +13,9 @@ const LEAGUE_TABLE_NAME = process.env.LEAGUE_TABLE_NAME as string
 
 export const createLeagueHandler = async (event: APIGatewayProxyEvent, userId: string, dynamoClient: DynamoDBClient) => {
 
-  if (!event.body) {
-    console.log("Body is missing from request")
-    return DEFAULT_ERROR
-  }
+  if (!event.body) return NO_BODY_ERROR
   const league = createLeagueSchema.safeParse(JSON.parse(event.body))
-  if (!league.success) {
-    console.log(JSON.stringify(league.error))
-    return DEFAULT_ERROR
-  }
+  if (!league.success) return PARSING_ERROR
   const { leagueName } = league.data
   const leagueId = uuidv4()
 
@@ -36,7 +30,7 @@ export const createLeagueHandler = async (event: APIGatewayProxyEvent, userId: s
     await dynamoClient.send(new PutItemCommand(params))
   } catch (error) {
     console.log(error)
-    return DEFAULT_ERROR
+    return DATABASE_ERROR
   }
 
 

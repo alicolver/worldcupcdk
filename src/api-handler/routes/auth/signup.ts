@@ -1,6 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda"
 import { z } from "zod"
-import { DEFAULT_ERROR } from "../../utils/constants"
+import { NO_BODY_ERROR, PARSING_ERROR } from "../../utils/constants"
 
 const USER_POOL_ID = process.env.USER_POOL_ID as string
 
@@ -15,16 +15,9 @@ export const signupHandler = async (
   event: APIGatewayProxyEvent,
   cognito: AWS.CognitoIdentityServiceProvider  
 ): Promise<APIGatewayProxyResult> => {
-  if (!event.body) return DEFAULT_ERROR
+  if (!event.body) return NO_BODY_ERROR
   const parsedEvent = signupSchema.safeParse(JSON.parse(event.body))
-  if (!parsedEvent.success) {
-    return {
-      statusCode: 400,
-      body: JSON.stringify({
-        message: "Invalid Input",
-      }),
-    }
-  }
+  if (!parsedEvent.success) return PARSING_ERROR
   const { givenName, familyName, email, password } = parsedEvent.data
   const params = {
     UserPoolId: USER_POOL_ID,

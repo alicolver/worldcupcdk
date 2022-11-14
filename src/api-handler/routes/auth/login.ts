@@ -1,6 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda"
 import { z } from "zod"
-import { DEFAULT_ERROR, SERVER_ERROR } from "../../utils/constants"
+import { NO_BODY_ERROR, PARSING_ERROR } from "../../utils/constants"
 
 const USER_POOL_ID = process.env.USER_POOL_ID as string
 const USER_POOL_CLIENT_ID = process.env.USER_POOL_CLIENT_ID as string
@@ -14,10 +14,10 @@ export const loginHandler = async (
   event: APIGatewayProxyEvent,
   cognito: AWS.CognitoIdentityServiceProvider
 ): Promise<APIGatewayProxyResult> => {
-  if (!event.body) return DEFAULT_ERROR
+  if (!event.body) return NO_BODY_ERROR
   const parsedEvent = loginSchema.safeParse(JSON.parse(event.body))
   if (!parsedEvent.success) {
-    return DEFAULT_ERROR
+    return PARSING_ERROR
   }
   const { email, password } = parsedEvent.data
   const params = {

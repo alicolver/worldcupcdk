@@ -1,6 +1,6 @@
 import { APIGatewayProxyEvent } from "aws-lambda"
 import { z } from "zod"
-import { DATABASE_ERROR, DEFAULT_ERROR } from "../../utils/constants"
+import { DATABASE_ERROR, NO_BODY_ERROR, PARSING_ERROR } from "../../utils/constants"
 import { v4 as uuidv4 } from "uuid"
 import { DynamoDBClient, PutItemCommand, PutItemCommandInput } from "@aws-sdk/client-dynamodb"
 import { marshall } from "@aws-sdk/util-dynamodb"
@@ -17,12 +17,9 @@ const createMatchSchema = z.object({
 })
 
 export const createMatchHandler = async (event: APIGatewayProxyEvent, dynamoClient: DynamoDBClient) => {
-  if (!event.body) return DEFAULT_ERROR
+  if (!event.body) return NO_BODY_ERROR
   const match = createMatchSchema.safeParse(JSON.parse(event.body))
-  if (!match.success) {
-    console.log(JSON.stringify(match.error))
-    return DEFAULT_ERROR
-  }
+  if (!match.success) return PARSING_ERROR
   const { homeTeam, awayTeam, gameStage, matchDate, matchTime, matchDay } = match.data
   const matchId = uuidv4()
 

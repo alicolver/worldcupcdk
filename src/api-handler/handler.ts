@@ -1,7 +1,6 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb"
 import {
   APIGatewayProxyEvent,
-  Context,
   APIGatewayProxyResult,
 } from "aws-lambda"
 import AWS from "aws-sdk"
@@ -14,10 +13,8 @@ import { endMatchHandler } from "./routes/match/end"
 import { getUpcomingMatchHandler } from "./routes/match/getUpcoming"
 import { getPredictionHandler } from "./routes/predictions/fetch"
 import { postPredictionHandler } from "./routes/predictions/make"
-import { DEFAULT_ERROR, UNAUTHORIZED, UNKNOWN_SERVER_ERROR } from "./utils/constants"
+import { UNAUTHORIZED, UNKNOWN_SERVER_ERROR } from "./utils/constants"
 import { convertResponse } from "./utils/response"
-
-const USER_POOL_CLIENT_ID = process.env.USER_POOL_CLIENT_ID as string
 
 const checkUserId = (userId: string | undefined): string => {
   if (!userId) {
@@ -28,10 +25,9 @@ const checkUserId = (userId: string | undefined): string => {
 
 export const handler = async (
   event: APIGatewayProxyEvent,
-  context: Context
 ): Promise<APIGatewayProxyResult> => {
   try {
-    return convertResponse(await routeRequest(event, context))
+    return convertResponse(await routeRequest(event))
   } catch (error) {
     console.log(error)
     return UNKNOWN_SERVER_ERROR
@@ -41,7 +37,6 @@ export const handler = async (
 
 export const routeRequest = async (
   event: APIGatewayProxyEvent,
-  context: Context
 ): Promise<APIGatewayProxyResult> => {
   const cognito = new AWS.CognitoIdentityServiceProvider()
   const dynamoClient = new DynamoDBClient({ region: "eu-west-2" })

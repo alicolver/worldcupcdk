@@ -22,8 +22,8 @@ export const pointsTableSchema = z.object({
 export const predictionsTableSchema = z.object({
   userId: z.string(),
   matchId: z.string(),
-  homeScore: z.number(),
-  awayScore: z.number(),
+  homeScore: z.number().nullish(),
+  awayScore: z.number().nullish(),
   points: z.number().nullish()
 })
 

@@ -76,15 +76,19 @@ export const endMatchHandler: express.Handler = async (req, res) => {
         const prediction = (
           await getPredictionsForUserId(userId, [matchId])
         )[0]
-        // TODO: If no prediction is returned set points to 0
         const userPoints = (await getPointsForUsers([userId]))[0]
-        const points = calculatePoints(
+        const points = (prediction && prediction.homeScore && prediction.awayScore) ? calculatePoints(
           { homeScore: prediction.homeScore, awayScore: prediction.awayScore },
           { homeScore, awayScore }
-        )
-        const updatedPrediction: PredictionsTableItem = {
+        ) : 0
+
+        const updatedPrediction: PredictionsTableItem = prediction ? {
           ...prediction,
           points,
+        } : {
+          matchId,
+          userId,
+          points
         }
 
         const pointsHistory = userPoints.pointsHistory
@@ -145,7 +149,7 @@ const calculatePoints = (prediction: Score, result: Score): number => {
   // correct score 1 bonus point
   if (
     prediction.awayScore === result.awayScore &&
-    prediction.awayScore === result.awayScore
+    prediction.homeScore === result.homeScore
   ) {
     points += 1
   }

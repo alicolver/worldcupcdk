@@ -8,6 +8,7 @@ import { registerMatchRoutes } from "./routes/match/router"
 import { registerUserRoutes } from "./routes/user/router"
 import { registerPointsRoutes } from "./routes/points/router"
 import { GetUserCommandOutput } from "@aws-sdk/client-cognito-identity-provider"
+import { registerPredictionsRoutes } from "./routes/predictions/router"
 
 declare global {
   namespace Express {
@@ -27,5 +28,6 @@ registerLeagueRoutes(app)
 registerMatchRoutes(app)
 registerUserRoutes(app)
 registerPointsRoutes(app)
+registerPredictionsRoutes(app)
 
 export const handler = serverless(app)

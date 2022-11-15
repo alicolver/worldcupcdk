@@ -22,9 +22,10 @@ export const getUpcomingMatchHandler: express.Handler = async (req, res) => {
   try {
     const matches = await dynamoClient.send(new ScanCommand(params))
     const parsedMatches = matches.Items?.map(item => matchesTableSchema.parse(unmarshall(item)))
+    const futureMatches = parsedMatches?.filter(match => match.isFinished === false)
 
     res.status(200)
-    res.json({ message: "Successfully fetched matches", data: parsedMatches })
+    res.json({ message: "Successfully fetched matches", data: futureMatches })
   } catch (error) {
     console.log(error)
     return returnError(res, DATABASE_ERROR)

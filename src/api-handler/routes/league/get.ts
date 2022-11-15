@@ -38,9 +38,15 @@ export const getLeagueHandler: express.Handler = async (req, res) => {
       return unmarshall(leagueData.Item)
     })
   )
+
+  const data = {
+    leagueId: parsedLeagueData.leagueId,
+    leagueName: parsedLeagueData.leagueName,
+    users: userObjects
+  }
   res.status(200)
   res.json({
     message: "Successfully got league",
-    data: {...parsedLeagueData, userObjects}
+    data
   })
 }

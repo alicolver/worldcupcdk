@@ -48,7 +48,7 @@ export const loginHandler: express.Handler = async (req, res) => {
   } catch (error) {
     console.log(error)
     if (error instanceof PasswordResetRequiredException) {
-      res.status(401)
+      res.status(307)
       return res.json({
         message: error.message,
         reset: true,

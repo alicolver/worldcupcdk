@@ -4,10 +4,17 @@ import {
 } from "@aws-sdk/client-dynamodb"
 import { unmarshall } from "@aws-sdk/util-dynamodb"
 import { z } from "zod"
-import { DATABASE_ERROR, PARSING_ERROR, returnError } from "../../utils/constants"
+import {
+  DATABASE_ERROR,
+  PARSING_ERROR,
+  returnError,
+} from "../../utils/constants"
 import express from "express"
 import { dynamoClient } from "../../utils/clients"
-import { PointsTableItem, pointsTableSchema } from "../../../common/dbModels/models"
+import {
+  PointsTableItem,
+  pointsTableSchema,
+} from "../../../common/dbModels/models"
 
 const getPointsSchema = z.object({
   userIds: z.array(z.string()),
@@ -15,14 +22,16 @@ const getPointsSchema = z.object({
 
 const POINTS_TABLE_NAME = process.env.POINTS_TABLE_NAME as string
 
-export const getPointsForUsers = async (userIds: string[]): Promise<PointsTableItem[]> => {
+export const getPointsForUsers = async (
+  userIds: string[]
+): Promise<PointsTableItem[]> => {
   const queryKeys = userIds.map((userId) => {
     return { userId: { S: userId } }
   })
   const getBatchParams: BatchGetItemCommandInput = {
     RequestItems: {
       [POINTS_TABLE_NAME]: {
-        Keys: queryKeys
+        Keys: queryKeys,
       },
     },
   }
@@ -31,8 +40,12 @@ export const getPointsForUsers = async (userIds: string[]): Promise<PointsTableI
     throw new Error("Error retreiving points")
   }
 
-  const unmarshalledResponses = data.Responses[POINTS_TABLE_NAME].map(response => unmarshall(response))
-  const parsedResponses = unmarshalledResponses.map(points => pointsTableSchema.parse(points))
+  const unmarshalledResponses = data.Responses[POINTS_TABLE_NAME].map(
+    (response) => unmarshall(response)
+  )
+  const parsedResponses = unmarshalledResponses.map((points) =>
+    pointsTableSchema.parse(points)
+  )
   return parsedResponses
 }
 
@@ -48,7 +61,7 @@ export const getPointsHandler: express.Handler = async (req, res) => {
     res.status(200)
     res.json({
       message: "Successfully fetched points",
-      body: pointsRecords
+      body: pointsRecords,
     })
   } catch (error) {
     console.log(error)

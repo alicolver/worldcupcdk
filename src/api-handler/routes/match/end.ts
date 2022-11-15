@@ -1,4 +1,7 @@
-import { ScanCommand, UpdateItemCommand } from "@aws-sdk/client-dynamodb"
+import {
+  PutItemCommand,
+  ScanCommand,
+} from "@aws-sdk/client-dynamodb"
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb"
 import { z } from "zod"
 import {
@@ -6,39 +9,50 @@ import {
   PARSING_ERROR,
   returnError,
 } from "../../utils/constants"
-import { MATCHES_TABLE_NAME, USERS_TABLE_NAME } from "../../utils/database"
+import {
+  MATCHES_TABLE_NAME,
+  POINTS_TABLE_NAME,
+  PREDICTIONS_TABLE_NAME,
+  USERS_TABLE_NAME,
+} from "../../utils/database"
 import express from "express"
 import { dynamoClient } from "../../utils/clients"
-import { UserPoolIdentityProviderSaml } from "aws-cdk-lib/aws-cognito"
 import { getPointsForUsers } from "../points/get"
+import { getPredictionsForUserId } from "../predictions/fetch"
+import { getMatchFromId } from "./utils"
+import {
+  PointsTableItem,
+  PredictionsTableItem,
+} from "../../../common/dbModels/models"
 
 const endMatchSchema = z.object({
-  matchid: z.string(),
+  matchId: z.string(),
   homeScore: z.number(),
   awayScore: z.number(),
 })
 
 // TODO: Wrap with admin
 export const endMatchHandler: express.Handler = async (req, res) => {
-  const match = endMatchSchema.safeParse(req.body)
-  if (!match.success) return returnError(res, PARSING_ERROR)
+  const endMatch = endMatchSchema.safeParse(req.body)
+  if (!endMatch.success) return returnError(res, PARSING_ERROR)
 
-  const matchData = match.data
+  const { matchId, homeScore, awayScore } = endMatch.data
+
+  const match = await getMatchFromId(matchId)
+  const updatedMatch = {
+    ...match,
+    isFinished: true,
+    result: {
+      home: homeScore,
+      away: awayScore,
+    },
+  }
 
   try {
     await dynamoClient.send(
-      new UpdateItemCommand({
+      new PutItemCommand({
         TableName: MATCHES_TABLE_NAME,
-        Key: {
-          matchId: { S: matchData.matchid },
-        },
-        UpdateExpression:
-          "set homeScore = :x, set awayScore = :y, set isFinished: :z",
-        ExpressionAttributeValues: marshall({
-          ":x": matchData.homeScore,
-          ":y": matchData.awayScore,
-          ":z": true,
-        }),
+        Item: marshall(updatedMatch),
       })
     )
   } catch (error) {
@@ -53,20 +67,54 @@ export const endMatchHandler: express.Handler = async (req, res) => {
         ProjectionExpression: "userId",
       })
     )
-    const userIds = z.array(z.string()).parse(userIdsScan.Items?.map(
-      (userId) => unmarshall(userId).userId
-    ))
+    const userIds = z
+      .array(z.string())
+      .parse(userIdsScan.Items?.map((userId) => unmarshall(userId).userId))
 
-    await Promise.all(userIds.map(async (userId) => {
-      // get prediction for match
-      const userPoints = (await getPointsForUsers([userId]))[0]
-      // calculate points user should get
-      // update prediction with points
-      // add points onto points record
-      // write points and prediction record to dynamo
-      return userId
-    }))
+    await Promise.all(
+      userIds.map(async (userId) => {
+        const prediction = (
+          await getPredictionsForUserId(userId, [matchId])
+        )[0]
+        // TODO: If no prediction is returned set points to 0
+        const userPoints = (await getPointsForUsers([userId]))[0]
+        const points = calculatePoints(
+          { homeScore: prediction.homeScore, awayScore: prediction.awayScore },
+          { homeScore, awayScore }
+        )
+        const updatedPrediction: PredictionsTableItem = {
+          ...prediction,
+          points,
+        }
 
+        const pointsHistory = userPoints.pointsHistory
+        if (pointsHistory.length < match.matchDay) {
+          pointsHistory.push(points)
+        } else {
+          const todaysPoints = pointsHistory.pop()
+          pointsHistory.push((todaysPoints || 0) + points)
+        }
+
+        const updatedUserPoints: PointsTableItem = {
+          ...userPoints,
+          pointsHistory,
+          totalPoints: userPoints.totalPoints + points,
+        }
+        await dynamoClient.send(
+          new PutItemCommand({
+            TableName: POINTS_TABLE_NAME,
+            Item: marshall(updatedUserPoints),
+          })
+        )
+        await dynamoClient.send(
+          new PutItemCommand({
+            TableName: PREDICTIONS_TABLE_NAME,
+            Item: marshall(updatedPrediction),
+          })
+        )
+        return userId
+      })
+    )
   } catch (error) {
     console.log(error)
     return returnError(res, DATABASE_ERROR)
@@ -74,4 +122,33 @@ export const endMatchHandler: express.Handler = async (req, res) => {
 
   res.status(200)
   res.json({ message: "Successfully ended match" })
+}
+
+type Score = {
+  homeScore: number;
+  awayScore: number;
+};
+
+const calculatePoints = (prediction: Score, result: Score): number => {
+  let points = 0
+
+  // correct result 2 points
+  if (
+    (prediction.homeScore <= prediction.awayScore &&
+      result.homeScore <= result.awayScore) ||
+    (prediction.homeScore > prediction.awayScore &&
+      result.homeScore > result.awayScore)
+  ) {
+    points += 2
+  }
+
+  // correct score 1 bonus point
+  if (
+    prediction.awayScore === result.awayScore &&
+    prediction.awayScore === result.awayScore
+  ) {
+    points += 1
+  }
+
+  return points
 }

@@ -23,7 +23,8 @@ export const predictionsTableSchema = z.object({
   userId: z.string(),
   matchId: z.string(),
   homeScore: z.number(),
-  awayScore: z.number()
+  awayScore: z.number(),
+  points: z.number().nullish()
 })
 
 export const matchesTableSchema = z.object({

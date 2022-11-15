@@ -1,7 +1,7 @@
 import { GetItemCommand, PutItemCommand } from "@aws-sdk/client-dynamodb"
 import { marshall } from "@aws-sdk/util-dynamodb"
 import { z } from "zod"
-import { UserTableItem } from "../../../common/dbModels/models"
+import { PointsTableItem, UserTableItem } from "../../../common/dbModels/models"
 import { DATABASE_ERROR, PARSING_ERROR, returnError } from "../../utils/constants"
 import { createLeague } from "../league/create"
 import { joinLeague } from "../league/join"
@@ -9,6 +9,7 @@ import { checkUserId } from "./utils"
 import express from "express"
 import { cognito, dynamoClient } from "../../utils/clients"
 import { AdminCreateUserCommand, AdminSetUserPasswordCommand } from "@aws-sdk/client-cognito-identity-provider"
+import { POINTS_TABLE_NAME } from "../../utils/database"
 
 const USER_POOL_ID = process.env.USER_POOL_ID as string
 const USERS_TABLE_NAME = process.env.USERS_TABLE_NAME as string
@@ -105,6 +106,18 @@ export const signupHandler: express.Handler = async (req, res) => {
     const joinGlobalLeagueResult = await joinLeague("global", userId, dynamoClient)
     console.log(`Join league message: ${joinGlobalLeagueResult.message}`)
   }
+
+  try {
+    const initiatePointsItem: PointsTableItem = { userId, pointsHistory: [], totalPoints: 0 }
+    await dynamoClient.send(new PutItemCommand({
+      TableName: POINTS_TABLE_NAME,
+      Item: marshall(initiatePointsItem)
+    }))
+  } catch (error) {
+    console.log(error)
+    return returnError(res, DATABASE_ERROR)
+  }
+
 
   const paramsForSetPass = {
     Password: password,

@@ -66,5 +66,4 @@ export const loginHandler: express.Handler = async (req, res) => {
       message: "Login failed"
     })
   }
-
 }

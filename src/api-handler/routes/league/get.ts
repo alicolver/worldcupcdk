@@ -5,8 +5,7 @@ import { leagueTableSchema } from "../../../common/dbModels/models"
 import { PARSING_ERROR, returnError } from "../../utils/constants"
 import express from "express"
 import { dynamoClient } from "../../utils/clients"
-
-const LEAGUE_TABLE_NAME = process.env.LEAGUE_TABLE_NAME as string
+import { LEAGUE_TABLE_NAME, USERS_TABLE_NAME } from "../../utils/database"
 
 const getLeagueSchema = z.object({
   leagueId: z.string(),
@@ -25,9 +24,23 @@ export const getLeagueHandler: express.Handler = async (req, res) => {
     return res.json({ message: "Unable to find league" })
   }
   const parsedLeagueData = leagueTableSchema.parse(unmarshall(leagueData.Item))
+  const userObjects = await Promise.all(
+    parsedLeagueData.userIds.map(async (userId) => {
+      const leagueData = await dynamoClient.send(
+        new GetItemCommand({
+          TableName: USERS_TABLE_NAME,
+          Key: marshall({ userId }),
+        })
+      )
+      if (!leagueData.Item) {
+        return { userId }
+      }
+      return unmarshall(leagueData.Item)
+    })
+  )
   res.status(200)
   res.json({
     message: "Successfully got league",
-    data: parsedLeagueData
+    data: {...parsedLeagueData, userObjects}
   })
 }

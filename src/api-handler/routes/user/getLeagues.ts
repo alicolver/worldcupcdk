@@ -40,7 +40,7 @@ export const getUserHandler: express.Handler = async (req, res) => {
     message: "Successfully got user",
     data: {
       ...parsedUserData,
-      leagues: leagueObejcts,
+      leagueObejcts,
     },
   })
 }

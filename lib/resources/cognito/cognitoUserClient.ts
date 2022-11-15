@@ -17,6 +17,7 @@ export class CognitoUserClient {
         authFlows: {
           adminUserPassword: true,
           userPassword: true,
+          userSrp: true
         },
         accessTokenValidity: Duration.minutes(60),
         idTokenValidity: Duration.minutes(60),

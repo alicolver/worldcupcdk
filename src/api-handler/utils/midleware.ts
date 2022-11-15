@@ -1,6 +1,5 @@
 import express from "express"
 import { getUser } from "../routes/auth/utils"
-import { cognito } from "./clients"
 import { returnError, UNAUTHORIZED } from "./constants"
 
 export const authRequired: express.Handler = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -8,7 +7,7 @@ export const authRequired: express.Handler = async (req: express.Request, res: e
   if (!authToken || typeof authToken !== "string") {
     return returnError(res, UNAUTHORIZED)
   }
-  const result = await getUser(cognito, authToken)
+  const result = await getUser(authToken)
   if (!result.success) {
     return returnError(res, UNAUTHORIZED)
   }

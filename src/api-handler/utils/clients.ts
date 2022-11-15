@@ -1,5 +1,8 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb"
-import AWS from "aws-sdk"
+import { CognitoIdentityProviderClient } from "@aws-sdk/client-cognito-identity-provider"
 
-export const cognito = new AWS.CognitoIdentityServiceProvider()
+export const cognito = new CognitoIdentityProviderClient({
+  region: "eu-west-2"
+})
+
 export const dynamoClient = new DynamoDBClient({ region: "eu-west-2" })

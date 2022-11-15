@@ -8,6 +8,7 @@ import { joinLeague } from "../league/join"
 import { checkUserId } from "./utils"
 import express from "express"
 import { cognito, dynamoClient } from "../../utils/clients"
+import { AdminCreateUserCommand, AdminSetUserPasswordCommand } from "@aws-sdk/client-cognito-identity-provider"
 
 const USER_POOL_ID = process.env.USER_POOL_ID as string
 const USERS_TABLE_NAME = process.env.USERS_TABLE_NAME as string
@@ -22,7 +23,10 @@ const signupSchema = z.object({
 
 export const signupHandler: express.Handler = async (req, res) => {
   const parsedEvent = signupSchema.safeParse(req.body)
-  if (!parsedEvent.success) return returnError(res, PARSING_ERROR)
+  if (!parsedEvent.success) {
+    console.log(parsedEvent.error)
+    return returnError(res, PARSING_ERROR)
+  }
   const { givenName, familyName, email, password } = parsedEvent.data
   const params = {
     UserPoolId: USER_POOL_ID,
@@ -49,9 +53,9 @@ export const signupHandler: express.Handler = async (req, res) => {
   }
   let response
   try {
-    response = await cognito.adminCreateUser(params).promise()
+    response = await cognito.send(new AdminCreateUserCommand(params))
   } catch (error) {
-    console.log(JSON.stringify(error))
+    console.log(error)
     res.status(500)
     return res.json({
       message: "Error creating user in cognito",
@@ -100,7 +104,7 @@ export const signupHandler: express.Handler = async (req, res) => {
     console.log("Found global league yet")
     const joinGlobalLeagueResult = await joinLeague("global", userId, dynamoClient)
     console.log(`Join league message: ${joinGlobalLeagueResult.message}`)
-  }  
+  }
 
   const paramsForSetPass = {
     Password: password,
@@ -110,7 +114,7 @@ export const signupHandler: express.Handler = async (req, res) => {
   }
 
   try {
-    await cognito.adminSetUserPassword(paramsForSetPass).promise()
+    await cognito.send(new AdminSetUserPasswordCommand(paramsForSetPass))
   } catch (error) {
     res.status(500)
     return res.json({

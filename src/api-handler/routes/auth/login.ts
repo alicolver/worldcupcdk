@@ -2,6 +2,7 @@ import express from "express"
 import { z } from "zod"
 import { cognito } from "../../utils/clients"
 import { PARSING_ERROR, returnError } from "../../utils/constants"
+import { PasswordResetRequiredException, AdminInitiateAuthCommand, GetUserCommand, NotAuthorizedException } from "@aws-sdk/client-cognito-identity-provider"
 
 const USER_POOL_ID = process.env.USER_POOL_ID as string
 const USER_POOL_CLIENT_ID = process.env.USER_POOL_CLIENT_ID as string
@@ -26,24 +27,44 @@ export const loginHandler: express.Handler = async (req, res) => {
       PASSWORD: password,
     },
   }
+  try {
+    const response = await cognito.send(new AdminInitiateAuthCommand(params))
 
-  const response = await cognito.adminInitiateAuth(params).promise()
+    if (!response.AuthenticationResult?.AccessToken) {
+      res.status(500)
+      return res.json({
+        message: "User not found",
+      })
+    }
 
-  if (!response.AuthenticationResult?.AccessToken) {
-    res.status(500)
+    const user = await cognito.send(new GetUserCommand({ AccessToken: response.AuthenticationResult?.AccessToken }))
+
+    res.status(200)
     return res.json({
-      message: "User not found",
+      message: "Success",
+      token: response.AuthenticationResult?.AccessToken,
+      user,
+    })
+  } catch (error) {
+    console.log(error)
+    if (error instanceof PasswordResetRequiredException) {
+      res.status(401)
+      return res.json({
+        message: error.message,
+        reset: true,
+      })
+    }
+    if (error instanceof NotAuthorizedException) {
+      res.status(401)
+      return res.json({
+        message: error.message,
+        reset: false,
+      })
+    }
+    res.status(500)
+    res.json({
+      message: "Login failed"
     })
   }
 
-  const user = await cognito
-    .getUser({ AccessToken: response.AuthenticationResult?.AccessToken })
-    .promise()
-
-  res.status(200)
-  return res.json({
-    message: "Success",
-    token: response.AuthenticationResult?.AccessToken,
-    user,
-  })
 }

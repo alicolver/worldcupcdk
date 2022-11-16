@@ -7,7 +7,7 @@ import { DATABASE_ERROR, returnError } from "../../utils/constants"
 import express from "express"
 import { dynamoClient } from "../../utils/clients"
 
-export const getLiveMatches = async (): Promise<MatchesTableItem[] | undefined> => {
+export const getLiveMatches = async (): Promise<MatchesTableItem[]> => {
   const today = getFormattedDate(new Date())
   const time = new Date().toISOString().split("T")[1].slice(0,5)
   const params: ScanCommandInput = {
@@ -20,7 +20,8 @@ export const getLiveMatches = async (): Promise<MatchesTableItem[] | undefined> 
     TableName: MATCHES_TABLE_NAME
   }
   const matches = await dynamoClient.send(new ScanCommand(params))
-  const parsedMatches = matches.Items?.map(item => matchesTableSchema.parse(unmarshall(item)))
+  if (!matches.Items) return []
+  const parsedMatches = matches.Items.map(item => matchesTableSchema.parse(unmarshall(item)))
   return parsedMatches
 }
 

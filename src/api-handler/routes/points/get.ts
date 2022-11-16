@@ -1,8 +1,7 @@
 import {
-  BatchGetItemCommand,
-  BatchGetItemCommandInput,
+  GetItemCommand,
 } from "@aws-sdk/client-dynamodb"
-import { unmarshall } from "@aws-sdk/util-dynamodb"
+import { marshall, unmarshall } from "@aws-sdk/util-dynamodb"
 import { z } from "zod"
 import {
   DATABASE_ERROR,
@@ -28,24 +27,14 @@ const POINTS_TABLE_NAME = process.env.POINTS_TABLE_NAME as string
 export const getPointsForUsers = async (
   userIds: string[]
 ): Promise<PointsTableItem[]> => {
-  const queryKeys = userIds.map((userId) => {
-    return { userId: { S: userId } }
-  })
-  const getBatchParams: BatchGetItemCommandInput = {
-    RequestItems: {
-      [POINTS_TABLE_NAME]: {
-        Keys: queryKeys,
-      },
-    },
-  }
-  const data = await dynamoClient.send(new BatchGetItemCommand(getBatchParams))
-  if (!data.Responses) {
-    throw new Error("Error retreiving points")
-  }
-
-  const unmarshalledResponses = data.Responses[POINTS_TABLE_NAME].map(
-    (response) => unmarshall(response)
-  )
+  const unmarshalledResponses = await Promise.all(userIds.map(async userId => {
+    const user = await dynamoClient.send(new GetItemCommand({
+      TableName: POINTS_TABLE_NAME,
+      Key: marshall({userId})
+    }))
+    if (!user.Item) throw Error(`Cannot find user points: ${userId}`)
+    return unmarshall(user.Item)
+  }))
   const parsedResponses = unmarshalledResponses.map((points) =>
     pointsTableSchema.parse(points)
   )

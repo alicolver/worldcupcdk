@@ -1,13 +1,19 @@
 import {
-  BatchGetItemCommand,
-  BatchGetItemCommandInput,
+  GetItemCommand,
 } from "@aws-sdk/client-dynamodb"
-import { unmarshall } from "@aws-sdk/util-dynamodb"
+import { marshall, unmarshall } from "@aws-sdk/util-dynamodb"
 import { z } from "zod"
-import { DATABASE_ERROR, PARSING_ERROR, returnError } from "../../utils/constants"
+import {
+  DATABASE_ERROR,
+  PARSING_ERROR,
+  returnError,
+} from "../../utils/constants"
 import express from "express"
 import { dynamoClient } from "../../utils/clients"
-import { PredictionsTableItem, predictionsTableSchema } from "../../../common/dbModels/models"
+import {
+  PredictionsTableItem,
+  predictionsTableSchema,
+} from "../../../common/dbModels/models"
 
 const getPredictionSchema = z.object({
   userId: z.string(),
@@ -16,26 +22,26 @@ const getPredictionSchema = z.object({
 
 const PREDICTIONS_TABLE_NAME = process.env.PREDICTIONS_TABLE_NAME as string
 
-export const getPredictionsForUserId = async (userId: string, matchIds: string[]): Promise<PredictionsTableItem[]> => {
-  const queryKeys = matchIds.map((matchId) => {
-    return { userId: { S: userId }, matchId: { S: matchId } }
-  })
-  const getBatchParams: BatchGetItemCommandInput = {
-    RequestItems: {
-      [PREDICTIONS_TABLE_NAME]: {
-        Keys: queryKeys
-      },
-    },
-  }
-  const data = await dynamoClient.send(new BatchGetItemCommand(getBatchParams))
-  if (!data.Responses) {
-    throw new Error("Error retreiving predictions")
-  }
-
-  const unmarshalledResponses = data.Responses[PREDICTIONS_TABLE_NAME].map(response => unmarshall(response))
-  const parsedResponses = unmarshalledResponses.map(points => predictionsTableSchema.parse(points))
+export const getPredictionsForUserId = async (
+  userId: string,
+  matchIds: string[]
+): Promise<PredictionsTableItem[]> => {
+  const unmarshalledResponses = await Promise.all(
+    matchIds.map(async (matchId) => {
+      const prediction = await dynamoClient.send(
+        new GetItemCommand({
+          TableName: PREDICTIONS_TABLE_NAME,
+          Key: marshall({ userId, matchId }),
+        })
+      )
+      if (!prediction.Item) throw new Error("Cannot find prediction")
+      return unmarshall(prediction.Item)
+    })
+  )
+  const parsedResponses = unmarshalledResponses.map((points) =>
+    predictionsTableSchema.parse(points)
+  )
   return parsedResponses
-
 }
 
 export const getPredictionHandler: express.Handler = async (req, res) => {
@@ -50,7 +56,7 @@ export const getPredictionHandler: express.Handler = async (req, res) => {
     res.status(200)
     res.json({
       message: "Successfully fetched predictions",
-      body: predictionsRecord
+      body: predictionsRecord,
     })
   } catch (error) {
     console.log(error)

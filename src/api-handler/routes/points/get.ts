@@ -46,6 +46,7 @@ export const getPointsForUsers = async (
   const parsedResponses = unmarshalledResponses.map((points) =>
     pointsTableSchema.parse(points)
   )
+  // TODO: get live points and add on here
   return parsedResponses
 }
 

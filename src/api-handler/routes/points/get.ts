@@ -15,6 +15,9 @@ import {
   PointsTableItem,
   pointsTableSchema,
 } from "../../../common/dbModels/models"
+import { getLiveMatches } from "../match/getLive"
+import { getPredictionsForUserId } from "../predictions/fetch"
+import { calculatePoints } from "../../utils/points"
 
 const getPointsSchema = z.object({
   userIds: z.array(z.string()),
@@ -46,8 +49,43 @@ export const getPointsForUsers = async (
   const parsedResponses = unmarshalledResponses.map((points) =>
     pointsTableSchema.parse(points)
   )
-  // TODO: get live points and add on here
   return parsedResponses
+}
+
+export const getLivePointsForUser = async (userId: string) => {
+  const liveMatches = await getLiveMatches()
+  if (!liveMatches) return 0
+  const livePoints = await Promise.all(
+    liveMatches.map(async (liveMatch) => {
+      const prediction = (
+        await getPredictionsForUserId(userId, [liveMatch.matchId])
+      )[0]
+      console.log(`prediction: ${JSON.stringify(prediction)}, userId: ${userId}`)
+      if (
+        prediction &&
+        (prediction.awayScore === 0 || prediction.awayScore) &&
+        (prediction.homeScore === 0 || prediction.homeScore)
+      ) {
+        console.log("Prediction exists")
+        console.log(JSON.stringify({ homeScore: prediction.homeScore, awayScore: prediction.awayScore }),
+          JSON.stringify({
+            homeScore: liveMatch.result ? liveMatch.result.home : 0,
+            awayScore: liveMatch.result ? liveMatch.result.away : 0,
+          }))
+        const points = calculatePoints(
+          { homeScore: prediction.homeScore, awayScore: prediction.awayScore },
+          {
+            homeScore: liveMatch.result ? liveMatch.result.home : 0,
+            awayScore: liveMatch.result ? liveMatch.result.away : 0,
+          }
+        )
+        console.log(points)
+        return points
+      }
+      return 0
+    })
+  )
+  return livePoints.reduce((partialSum, a) => partialSum + a, 0)
 }
 
 export const getPointsHandler: express.Handler = async (req, res) => {
@@ -59,10 +97,17 @@ export const getPointsHandler: express.Handler = async (req, res) => {
   try {
     const pointsRecords = await getPointsForUsers(userIds)
 
+    const pointsWithLive = await Promise.all(
+      pointsRecords.map(async (userPoints) => {
+        const livePoints = await getLivePointsForUser(userPoints.userId)
+        return { ...userPoints, livePoints }
+      })
+    )
+
     res.status(200)
     res.json({
       message: "Successfully fetched points",
-      body: pointsRecords,
+      body: pointsWithLive,
     })
   } catch (error) {
     console.log(error)

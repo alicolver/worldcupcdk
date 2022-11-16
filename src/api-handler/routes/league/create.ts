@@ -14,7 +14,7 @@ const createLeagueSchema = z.object({
 const LEAGUE_TABLE_NAME = process.env.LEAGUE_TABLE_NAME as string
 
 export const createLeague = async (leagueName: string, userId: string) => {
-  const leagueId = leagueName.toLowerCase().replace(/\s+/g, " ").replace(" ", "-")
+  const leagueId = leagueName.toLowerCase().replace(/\s+/g, " ").replace(/ /g, "-")
 
   const params: PutItemCommandInput = {
     TableName: LEAGUE_TABLE_NAME,

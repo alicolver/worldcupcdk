@@ -24,6 +24,7 @@ import {
   PointsTableItem,
   PredictionsTableItem,
 } from "../../../common/dbModels/models"
+import { calculatePoints } from "../../utils/points"
 
 const endMatchSchema = z.object({
   matchId: z.string(),
@@ -126,33 +127,4 @@ export const endMatchHandler: express.Handler = async (req, res) => {
 
   res.status(200)
   res.json({ message: "Successfully ended match" })
-}
-
-type Score = {
-  homeScore: number;
-  awayScore: number;
-};
-
-const calculatePoints = (prediction: Score, result: Score): number => {
-  let points = 0
-
-  // correct result 2 points
-  if (
-    (prediction.homeScore <= prediction.awayScore &&
-      result.homeScore <= result.awayScore) ||
-    (prediction.homeScore > prediction.awayScore &&
-      result.homeScore > result.awayScore)
-  ) {
-    points += 2
-  }
-
-  // correct score 1 bonus point
-  if (
-    prediction.awayScore === result.awayScore &&
-    prediction.homeScore === result.homeScore
-  ) {
-    points += 1
-  }
-
-  return points
 }

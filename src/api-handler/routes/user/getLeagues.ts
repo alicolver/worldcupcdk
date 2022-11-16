@@ -9,6 +9,8 @@ import express from "express"
 import { dynamoClient } from "../../utils/clients"
 import { getUserId } from "../auth/utils"
 import { LEAGUE_TABLE_NAME, POINTS_TABLE_NAME } from "../../utils/database"
+import { rank } from "../../utils/rank"
+import { getLivePointsForUser } from "../points/get"
 
 const USERS_TABLE_NAME = process.env.USERS_TABLE_NAME as string
 
@@ -57,9 +59,12 @@ export const getUserHandler: express.Handler = async (req, res) => {
           const pointsItem = pointsTableSchema.parse(
             unmarshall(userPoints.Item)
           )
+
+          const livePoints = await getLivePointsForUser(userId)
+
           return {
             userId: pointsItem.userId,
-            totalPoints: pointsItem.totalPoints,
+            totalPoints: pointsItem.totalPoints + livePoints,
           }
         })
       )
@@ -70,11 +75,7 @@ export const getUserHandler: express.Handler = async (req, res) => {
       )
       return {
         ...leagueObject,
-        users: rank(
-          leagueWithPoints,
-          (a, b) => b.totalPoints - a.totalPoints,
-          true
-        ),
+        users: usersWithRankings,
         currentRanking: usersWithRankings.filter(
           (user) => user.userId == userId
         )[0].rank,
@@ -94,31 +95,4 @@ export const getUserHandler: express.Handler = async (req, res) => {
     message: "Successfully got user",
     data,
   })
-}
-type RankObject = {
-  totalPoints: number;
-  userId: string;
-  rank?: number;
-};
-
-const rank = (
-  array: RankObject[],
-  compare: (a: RankObject, b: RankObject) => number,
-  consecutiveRanks: boolean
-) => {
-  const sorted = array.slice().sort(compare)
-  let current
-  for (const [i, obj] of sorted.entries()) {
-    if (!current || compare(current, obj) != 0) {
-      obj["rank"] = !consecutiveRanks
-        ? i + 1
-        : !current
-          ? 1
-          : (current["rank"] || 0) + 1
-      current = obj
-    } else {
-      obj["rank"] = current["rank"]
-    }
-  }
-  return sorted
 }

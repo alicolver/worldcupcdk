@@ -40,9 +40,12 @@ export const loginHandler: express.Handler = async (req, res) => {
     const user = await cognito.send(new GetUserCommand({ AccessToken: response.AuthenticationResult?.AccessToken }))
 
     res.status(200)
+    res.setHeader("authorization", response.AuthenticationResult?.AccessToken)
+    res.setHeader("refresh", response.AuthenticationResult.RefreshToken || "")
     return res.json({
       message: "Success",
       token: response.AuthenticationResult?.AccessToken,
+      refresh: response.AuthenticationResult.RefreshToken,
       user,
     })
   } catch (error) {

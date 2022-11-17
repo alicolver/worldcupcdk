@@ -19,7 +19,13 @@ declare global {
 }
 
 const app = express()
-app.use(cors())
+app.use(cors({
+  exposedHeaders: [
+    "x-amzn-remapped-authorization",
+    "refresh",
+    "Authorization"
+  ]
+}))
 
 app.use(express.json())
 

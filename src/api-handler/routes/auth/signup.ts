@@ -75,6 +75,22 @@ export const signupHandler: express.Handler = async (req, res) => {
     (attribute) => attribute.Name === "sub"
   )[0].Value)
 
+  const paramsForSetPass = {
+    Password: password,
+    UserPoolId: USER_POOL_ID,
+    Username: email,
+    Permanent: true,
+  }
+
+  try {
+    await cognito.send(new AdminSetUserPasswordCommand(paramsForSetPass))
+  } catch (error) {
+    res.status(500)
+    return res.json({
+      message: "Error setting user password in cognito",
+    })
+  }
+
   const userItem: UserTableItem = {
     userId,
     givenName,
@@ -119,23 +135,6 @@ export const signupHandler: express.Handler = async (req, res) => {
   } catch (error) {
     console.log(error)
     return returnError(res, DATABASE_ERROR)
-  }
-
-
-  const paramsForSetPass = {
-    Password: password,
-    UserPoolId: USER_POOL_ID,
-    Username: email,
-    Permanent: true,
-  }
-
-  try {
-    await cognito.send(new AdminSetUserPasswordCommand(paramsForSetPass))
-  } catch (error) {
-    res.status(500)
-    return res.json({
-      message: "Error setting user password in cognito",
-    })
   }
 
   res.status(200)

@@ -65,20 +65,31 @@ export const getUserHandler: express.Handler = async (req, res) => {
           return {
             userId: pointsItem.userId,
             totalPoints: pointsItem.totalPoints + livePoints,
+            previousTotalPoints: pointsItem.pointsHistory
+              .slice(0, 1)
+              .reduce((partial, a) => a + partial, 0),
           }
         })
       )
-      const usersWithRankings = rank(
+      const usersWithCurrentRankings = rank(
         leagueWithPoints,
         (a, b) => b.totalPoints - a.totalPoints,
         true
       )
+      const usersWithCurrentAndPreviousRankings = rank(
+        usersWithCurrentRankings,
+        (a, b) => (b.previousTotalPoints as number) - (a.previousTotalPoints as number),
+        true,
+        "yesterdayRank"
+      )
+
       return {
         ...leagueObject,
-        users: usersWithRankings,
-        currentRanking: usersWithRankings.filter(
+        users: usersWithCurrentAndPreviousRankings,
+        currentRanking: usersWithCurrentRankings.filter(
           (user) => user.userId == userId
         )[0].rank,
+        previousRanking: usersWithCurrentAndPreviousRankings.filter((user) => user.userId == userId)[0].yesterdayRank
       }
     })
   )

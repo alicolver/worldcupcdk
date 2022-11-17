@@ -10,6 +10,7 @@ import express from "express"
 import { cognito, dynamoClient } from "../../utils/clients"
 import { AdminCreateUserCommand, AdminSetUserPasswordCommand } from "@aws-sdk/client-cognito-identity-provider"
 import { POINTS_TABLE_NAME } from "../../utils/database"
+import { getFormattedDate, numberOfPreviousMatchDays } from "../../utils/date"
 
 const USER_POOL_ID = process.env.USER_POOL_ID as string
 const USERS_TABLE_NAME = process.env.USERS_TABLE_NAME as string
@@ -108,7 +109,9 @@ export const signupHandler: express.Handler = async (req, res) => {
   }
 
   try {
-    const initiatePointsItem: PointsTableItem = { userId, pointsHistory: [], totalPoints: 0 }
+    const previousMatchDays = numberOfPreviousMatchDays[getFormattedDate(new Date())] || 0
+    const pointsHistory: number[] = new Array(previousMatchDays).fill(0)
+    const initiatePointsItem: PointsTableItem = { userId, pointsHistory, totalPoints: 0 }
     await dynamoClient.send(new PutItemCommand({
       TableName: POINTS_TABLE_NAME,
       Item: marshall(initiatePointsItem)

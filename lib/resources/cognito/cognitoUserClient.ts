@@ -19,8 +19,8 @@ export class CognitoUserClient {
           userPassword: true,
           userSrp: true
         },
-        accessTokenValidity: Duration.minutes(60),
-        idTokenValidity: Duration.minutes(60),
+        accessTokenValidity: Duration.hours(24),
+        idTokenValidity: Duration.hours(24),
         refreshTokenValidity: Duration.days(30),
         userPoolClientName: "worldCup2022UserClient",
       }

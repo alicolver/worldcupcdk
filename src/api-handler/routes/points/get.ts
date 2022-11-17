@@ -13,10 +13,12 @@ import { dynamoClient } from "../../utils/clients"
 import {
   PointsTableItem,
   pointsTableSchema,
+  PredictionsTableItem,
+  predictionsTableSchema,
 } from "../../../common/dbModels/models"
 import { getLiveMatches } from "../match/getLive"
-import { getPredictionsForUserId } from "../predictions/fetch"
 import { calculatePoints } from "../../utils/points"
+import { PREDICTIONS_TABLE_NAME } from "../../utils/database"
 
 const getPointsSchema = z.object({
   userIds: z.array(z.string()),
@@ -46,23 +48,36 @@ export const getLivePointsForUser = async (userId: string) => {
   if (!liveMatches) return 0
   const livePoints = await Promise.all(
     liveMatches.map(async (liveMatch) => {
-      const prediction = (
-        await getPredictionsForUserId(userId, [liveMatch.matchId])
-      )[0]
-      console.log(`prediction: ${JSON.stringify(prediction)}, userId: ${userId}`)
+      const prediction = await dynamoClient.send(
+        new GetItemCommand({
+          TableName: PREDICTIONS_TABLE_NAME,
+          Key: marshall({ userId, matchId: liveMatch.matchId }),
+        })
+      )
+      let parsedPrediction: PredictionsTableItem
+      if (!prediction.Item) {
+        parsedPrediction = {
+          userId,
+          matchId: liveMatch.matchId
+        }
+      } else {
+        parsedPrediction = predictionsTableSchema.parse(
+          unmarshall(prediction.Item)
+        )
+      }
+      
       if (
-        prediction &&
-        (prediction.awayScore === 0 || prediction.awayScore) &&
-        (prediction.homeScore === 0 || prediction.homeScore)
+        parsedPrediction &&
+        (parsedPrediction.awayScore === 0 || parsedPrediction.awayScore) &&
+        (parsedPrediction.homeScore === 0 || parsedPrediction.homeScore)
       ) {
-        console.log("Prediction exists")
-        console.log(JSON.stringify({ homeScore: prediction.homeScore, awayScore: prediction.awayScore }),
+        console.log(JSON.stringify({ homeScore: parsedPrediction.homeScore, awayScore: parsedPrediction.awayScore }),
           JSON.stringify({
             homeScore: liveMatch.result ? liveMatch.result.home : 0,
             awayScore: liveMatch.result ? liveMatch.result.away : 0,
           }))
         const points = calculatePoints(
-          { homeScore: prediction.homeScore, awayScore: prediction.awayScore },
+          { homeScore: parsedPrediction.homeScore, awayScore: parsedPrediction.awayScore },
           {
             homeScore: liveMatch.result ? liveMatch.result.home : 0,
             awayScore: liveMatch.result ? liveMatch.result.away : 0,

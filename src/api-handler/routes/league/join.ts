@@ -12,7 +12,8 @@ const joinLeagueSchema = z.object({
 
 export const joinLeague = async (leagueId: string, userId: string, dynamoClient: DynamoDBClient): Promise<{ success: boolean, message: string }> => {
   try {
-    await Promise.all([addLeagueIdToUser(leagueId, userId, dynamoClient), addUserIdToLeague(leagueId, userId, dynamoClient)])
+    await addUserIdToLeague(leagueId, userId, dynamoClient)
+    await addLeagueIdToUser(leagueId, userId, dynamoClient)
     return {
       success: true,
       message: "Successfully joined league"

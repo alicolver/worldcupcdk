@@ -1,11 +1,13 @@
 import { GetItemCommand } from "@aws-sdk/client-dynamodb"
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb"
 import { z } from "zod"
-import { leagueTableSchema } from "../../../common/dbModels/models"
+import { leagueTableSchema, pointsTableSchema, userTableSchema } from "../../../common/dbModels/models"
 import { PARSING_ERROR, returnError } from "../../utils/constants"
 import express from "express"
 import { dynamoClient } from "../../utils/clients"
-import { LEAGUE_TABLE_NAME, USERS_TABLE_NAME } from "../../utils/database"
+import { LEAGUE_TABLE_NAME, POINTS_TABLE_NAME, USERS_TABLE_NAME } from "../../utils/database"
+import { getLivePointsForUser } from "../points/get"
+import { rank } from "../../utils/rank"
 
 const getLeagueSchema = z.object({
   leagueId: z.string(),
@@ -26,23 +28,45 @@ export const getLeagueHandler: express.Handler = async (req, res) => {
   const parsedLeagueData = leagueTableSchema.parse(unmarshall(leagueData.Item))
   const userObjects = await Promise.all(
     parsedLeagueData.userIds.map(async (userId) => {
-      const leagueData = await dynamoClient.send(
+      const usersData = await dynamoClient.send(
         new GetItemCommand({
           TableName: USERS_TABLE_NAME,
           Key: marshall({ userId }),
         })
       )
-      if (!leagueData.Item) {
-        return { userId }
+      if (!usersData.Item) {
+        throw new Error("Unable to find user data")
       }
-      return unmarshall(leagueData.Item)
+      const parsedUsersData = userTableSchema.parse(unmarshall(usersData.Item))
+      
+      const userPoints = await dynamoClient.send(
+        new GetItemCommand({
+          TableName: POINTS_TABLE_NAME,
+          Key: marshall({ userId }),
+        })
+      )
+      if (!userPoints.Item) {
+        throw new Error("Unable to find user points")
+      }
+      const pointsItem = pointsTableSchema.parse(
+        unmarshall(userPoints.Item)
+      )
+
+      const livePoints = await getLivePointsForUser(userId)
+
+      return {
+        ...parsedUsersData,
+        totalPoints: pointsItem.totalPoints + livePoints,
+      }
     })
   )
+
+  const usersWithRankings = rank(userObjects, (a, b) => b.totalPoints - a.totalPoints, true)
 
   const data = {
     leagueId: parsedLeagueData.leagueId,
     leagueName: parsedLeagueData.leagueName,
-    users: userObjects
+    users: usersWithRankings
   }
   res.status(200)
   res.json({

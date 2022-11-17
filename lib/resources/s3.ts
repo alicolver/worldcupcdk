@@ -21,6 +21,7 @@ export class S3Buckets {
           },
         ],
         removalPolicy: props.stage === deploymentStage.PROD ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY,
+        publicReadAccess: true
       })
     }
   }

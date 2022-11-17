@@ -23,6 +23,10 @@ const signupSchema = z.object({
   familyName: z.string(),
 })
 
+function containsNumbers(str: string) {
+  return /\d/.test(str)
+}
+
 export const signupHandler: express.Handler = async (req, res) => {
   const parsedEvent = signupSchema.safeParse(req.body)
   if (!parsedEvent.success) {
@@ -30,6 +34,12 @@ export const signupHandler: express.Handler = async (req, res) => {
     return returnError(res, PARSING_ERROR)
   }
   const { givenName, familyName, email, password } = parsedEvent.data
+  if (!containsNumbers(password)) {
+    res.status(403)
+    return res.json({
+      message: "Password must contain numbers",
+    })
+  }
   const params = {
     UserPoolId: USER_POOL_ID,
     Username: email,

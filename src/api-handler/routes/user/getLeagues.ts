@@ -91,11 +91,9 @@ export const getUserHandler: express.Handler = async (req, res) => {
 
   const leagueObjectsWithRankings = leagueObjects.map((league) => {
     const usersWithPoints = league.userIds.map((userId) => {
-      console.log(userId)
       const userPoints = pointsObjectsWithLive.filter(
         (points) => points.userId === userId
       )[0]
-      console.log(JSON.stringify(userPoints))
       return {
         userId,
         totalPoints: userPoints.totalPoints,

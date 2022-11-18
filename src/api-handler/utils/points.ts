@@ -8,10 +8,12 @@ export const calculatePoints = (prediction: Result, result: Result): number => {
 
   // correct result 2 points
   if (
-    (prediction.homeScore <= prediction.awayScore &&
-      result.homeScore <= result.awayScore) ||
+    (prediction.homeScore < prediction.awayScore &&
+      result.homeScore < result.awayScore) ||
     (prediction.homeScore > prediction.awayScore &&
-      result.homeScore > result.awayScore)
+      result.homeScore > result.awayScore) ||
+    (prediction.homeScore === prediction.awayScore &&
+      result.homeScore === result.awayScore)
   ) {
     points += 2
   }

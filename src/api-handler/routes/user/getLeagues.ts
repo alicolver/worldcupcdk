@@ -1,7 +1,9 @@
 import { GetItemCommand } from "@aws-sdk/client-dynamodb"
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb"
 import {
+  LeagueTableItem,
   leagueTableSchema,
+  PointsTableItem,
   pointsTableSchema,
   userTableSchema,
 } from "../../../common/dbModels/models"
@@ -11,6 +13,8 @@ import { getUserId } from "../auth/utils"
 import { LEAGUE_TABLE_NAME, POINTS_TABLE_NAME } from "../../utils/database"
 import { rank } from "../../utils/rank"
 import { getLivePointsForUser } from "../points/get"
+import { batchGetFromDynamo } from "../../utils/dynamoBatchGet"
+import { getLiveMatches } from "../match/getLive"
 
 const USERS_TABLE_NAME = process.env.USERS_TABLE_NAME as string
 
@@ -27,78 +31,108 @@ export const getUserHandler: express.Handler = async (req, res) => {
     return res.json({ message: "Unable to find user" })
   }
   const parsedUserData = userTableSchema.parse(unmarshall(userData.Item))
-  const leagueObjects = await Promise.all(
-    parsedUserData.leagueIds.map(async (leagueId) => {
-      const leagueData = await dynamoClient.send(
-        new GetItemCommand({
-          TableName: LEAGUE_TABLE_NAME,
-          Key: marshall({ leagueId }),
-        })
-      )
-      if (!leagueData.Item) {
-        res.status(500)
-        throw new Error("Unable to find league")
-      }
-      return leagueTableSchema.parse(unmarshall(leagueData.Item))
-    })
+
+  const leagueObjects = await batchGetFromDynamo<
+    LeagueTableItem,
+    { leagueId: string }
+  >(
+    parsedUserData.leagueIds.map((leagueId) => {
+      return { leagueId }
+    }),
+    leagueTableSchema,
+    dynamoClient,
+    LEAGUE_TABLE_NAME,
+    ["leagueId", "leagueName", "userIds"]
   )
 
-  const leagueObjectsWithPoints = await Promise.all(
-    leagueObjects.map(async (leagueObject) => {
-      const leagueWithPoints = await Promise.all(
-        leagueObject.userIds.map(async (userId) => {
-          const userPoints = await dynamoClient.send(
-            new GetItemCommand({
-              TableName: POINTS_TABLE_NAME,
-              Key: marshall({ userId }),
-            })
-          )
-          if (!userPoints.Item) {
-            throw new Error("Unable to find user points")
-          }
-          const pointsItem = pointsTableSchema.parse(
-            unmarshall(userPoints.Item)
-          )
+  const userIds = [
+    ...new Set(leagueObjects.map((league) => league.userIds).flat()),
+  ].map((userId) => {
+    return { userId }
+  })
 
-          const livePoints = await getLivePointsForUser(userId)
+  const pointsObjects = await batchGetFromDynamo<
+    PointsTableItem,
+    { userId: string }
+  >(userIds, pointsTableSchema, dynamoClient, POINTS_TABLE_NAME, [
+    "userId",
+    "pointsHistory",
+    "totalPoints",
+  ])
 
-          return {
-            userId: pointsItem.userId,
-            totalPoints: pointsItem.totalPoints + livePoints,
-            previousTotalPoints: pointsItem.pointsHistory
-              .slice(0, 1)
-              .reduce((partial, a) => a + partial, 0),
-          }
-        })
-      )
-      const usersWithCurrentRankings = rank(
-        leagueWithPoints,
-        (a, b) => b.totalPoints - a.totalPoints,
-        true
-      )
-      const usersWithCurrentAndPreviousRankings = rank(
-        usersWithCurrentRankings,
-        (a, b) => (b.previousTotalPoints as number) - (a.previousTotalPoints as number),
-        true,
-        "yesterdayRank"
-      )
+  const liveMatches = await getLiveMatches()
 
+  const livePoints = await Promise.all(
+    userIds.map(async (user) => {
+      const livePoints = await getLivePointsForUser(user.userId, liveMatches)
       return {
-        ...leagueObject,
-        users: usersWithCurrentAndPreviousRankings,
-        currentRanking: usersWithCurrentRankings.filter(
-          (user) => user.userId == userId
-        )[0].rank,
-        previousRanking: usersWithCurrentAndPreviousRankings.filter((user) => user.userId == userId)[0].yesterdayRank
+        userId: user.userId,
+        livePoints,
       }
     })
   )
+
+  const merged = []
+
+  for(let i=0; i<pointsObjects.length; i++) {
+    merged.push({
+      ...pointsObjects[i], 
+      ...(livePoints.find((itmInner) => itmInner.userId === pointsObjects[i].userId))}
+    )
+  }
+
+  const pointsObjectsWithLive = merged.map((pointsObject) => {
+    return {
+      userId: pointsObject.userId,
+      pointsHistory: pointsObject.pointsHistory,
+      totalPoints: pointsObject.totalPoints + (pointsObject.livePoints || 0)
+    }
+  })
+
+  const leagueObjectsWithRankings = leagueObjects.map((league) => {
+    const usersWithPoints = league.userIds.map((userId) => {
+      console.log(userId)
+      const userPoints = pointsObjectsWithLive.filter(
+        (points) => points.userId === userId
+      )[0]
+      console.log(JSON.stringify(userPoints))
+      return {
+        userId,
+        totalPoints: userPoints.totalPoints,
+        previousTotalPoints: userPoints.pointsHistory
+          .slice(0, 1)
+          .reduce((partial, a) => a + partial, 0),
+      }
+    })
+    const usersWithCurrentRankings = rank(
+      usersWithPoints,
+      (a, b) => b.totalPoints - a.totalPoints,
+      true
+    )
+    const usersWithCurrentAndPreviousRankings = rank(
+      usersWithCurrentRankings,
+      (a, b) =>
+        (b.previousTotalPoints as number) - (a.previousTotalPoints as number),
+      true,
+      "yesterdayRank"
+    )
+    return {
+      ...league,
+      users: usersWithCurrentAndPreviousRankings,
+      currentRanking: usersWithCurrentRankings.filter(
+        (user) => user.userId == userId
+      )[0].rank,
+      previousRanking: usersWithCurrentAndPreviousRankings.filter(
+        (user) => user.userId == userId
+      )[0].yesterdayRank,
+    }
+  })
 
   const data = {
     userId: parsedUserData.userId,
     givenName: parsedUserData.givenName,
     familyName: parsedUserData.familyName,
-    leagues: leagueObjectsWithPoints,
+    leagues: leagueObjectsWithRankings,
   }
 
   res.status(200)

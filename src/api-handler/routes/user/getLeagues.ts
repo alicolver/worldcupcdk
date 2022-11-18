@@ -128,11 +128,16 @@ export const getUserHandler: express.Handler = async (req, res) => {
     }
   })
 
+  const globalLeague = leagueObjectsWithRankings.filter(league => league.leagueId == "global")[0]
+  const otherLeagues = leagueObjectsWithRankings.filter(league => league.leagueId !== "global")
+
+
+
   const data = {
     userId: parsedUserData.userId,
     givenName: parsedUserData.givenName,
     familyName: parsedUserData.familyName,
-    leagues: leagueObjectsWithRankings,
+    leagues: [globalLeague, ...otherLeagues],
   }
 
   res.status(200)

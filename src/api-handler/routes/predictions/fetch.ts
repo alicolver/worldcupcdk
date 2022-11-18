@@ -14,9 +14,9 @@ import {
   PredictionsTableItem,
   predictionsTableSchema,
 } from "../../../common/dbModels/models"
+import { getUserId } from "../auth/utils"
 
 const getPredictionSchema = z.object({
-  userId: z.string(),
   matchIds: z.array(z.string()),
 })
 
@@ -45,11 +45,12 @@ export const getPredictionsForUserId = async (
 }
 
 export const getPredictionHandler: express.Handler = async (req, res) => {
+  const userId = getUserId(req.user!)
   const getPredictions = getPredictionSchema.safeParse(req.body)
   if (!getPredictions.success) return returnError(res, PARSING_ERROR)
 
   const getPredictionsData = getPredictions.data
-  const { userId, matchIds } = getPredictionsData
+  const { matchIds } = getPredictionsData
   try {
     const predictionsRecord = await getPredictionsForUserId(userId, matchIds)
 

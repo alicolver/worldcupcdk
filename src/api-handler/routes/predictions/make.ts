@@ -5,7 +5,7 @@ import {
   PARSING_ERROR,
   returnError,
 } from "../../utils/constants"
-import { marshall } from "@aws-sdk/util-dynamodb"
+import { marshall, unmarshall } from "@aws-sdk/util-dynamodb"
 import {
   matchesTableSchema,
   PredictionsTableItem,
@@ -49,7 +49,7 @@ export const makePredictionHandler: express.Handler = async (req, res) => {
       })
     )
     if (!match.Item) throw new Error("Match not found")
-    const parsedMatch = matchesTableSchema.parse(match.Item)
+    const parsedMatch = matchesTableSchema.parse(unmarshall(match.Item))
     if (
       new Date() > new Date(`${parsedMatch.matchDate}T${parsedMatch.matchTime}`)
     ) {

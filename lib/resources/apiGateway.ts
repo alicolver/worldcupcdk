@@ -11,17 +11,6 @@ export class ApiGateway {
   constructor(scope: Construct, props: ApiGatewayProps) {
     new LambdaRestApi(scope, "WorldCupApi", {
       restApiName: `${ENV_PREFIX}WorldCupApi`,
-      defaultCorsPreflightOptions: {
-        allowHeaders: [
-          "Content-Type",
-          "X-Amz-Date",
-          "Authorization",
-          "X-Api-Key",
-        ],
-        allowMethods: ["GET", "POST", "PUT"],
-        allowCredentials: true,
-        allowOrigins: Cors.ALL_ORIGINS,
-      },
       handler: props.lambda.function,
     })
   }

@@ -11,6 +11,7 @@ import {
 import express from "express"
 import { dynamoClient } from "../../utils/clients"
 import {
+  MatchesTableItem,
   PointsTableItem,
   pointsTableSchema,
   PredictionsTableItem,
@@ -43,8 +44,7 @@ export const getPointsForUsers = async (
   return parsedResponses
 }
 
-export const getLivePointsForUser = async (userId: string) => {
-  const liveMatches = await getLiveMatches()
+export const getLivePointsForUser = async (userId: string, liveMatches: MatchesTableItem[]) => {
   if (!liveMatches) return 0
   const livePoints = await Promise.all(
     liveMatches.map(async (liveMatch) => {
@@ -96,6 +96,8 @@ export const getPointsHandler: express.Handler = async (req, res) => {
   const getPoints = getPointsSchema.safeParse(req.body)
   if (!getPoints.success) return returnError(res, PARSING_ERROR)
 
+  const liveMatches = await getLiveMatches()
+
   const getPointsData = getPoints.data
   const { userIds } = getPointsData
   try {
@@ -103,7 +105,7 @@ export const getPointsHandler: express.Handler = async (req, res) => {
 
     const pointsWithLive = await Promise.all(
       pointsRecords.map(async (userPoints) => {
-        const livePoints = await getLivePointsForUser(userPoints.userId)
+        const livePoints = await getLivePointsForUser(userPoints.userId, liveMatches)
         return { ...userPoints, livePoints }
       })
     )

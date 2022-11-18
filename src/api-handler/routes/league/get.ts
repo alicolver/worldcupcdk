@@ -16,6 +16,7 @@ import {
 } from "../../utils/database"
 import { getLivePointsForUser } from "../points/get"
 import { rank } from "../../utils/rank"
+import { getLiveMatches } from "../match/getLive"
 
 const getLeagueSchema = z.object({
   leagueId: z.string(),
@@ -35,6 +36,9 @@ export const getLeagueHandler: express.Handler = async (req, res) => {
     res.status(500)
     return res.json({ message: "Unable to find league" })
   }
+
+  const liveMatches = await getLiveMatches()
+
   const parsedLeagueData = leagueTableSchema.parse(unmarshall(leagueData.Item))
   const userObjects = await Promise.all(
     parsedLeagueData.userIds.map(async (userId) => {
@@ -60,7 +64,7 @@ export const getLeagueHandler: express.Handler = async (req, res) => {
       }
       const pointsItem = pointsTableSchema.parse(unmarshall(userPoints.Item))
 
-      const livePoints = await getLivePointsForUser(userId)
+      const livePoints = await getLivePointsForUser(userId, liveMatches)
 
       return {
         ...parsedUsersData,

@@ -128,59 +128,6 @@ export const getUserHandler: express.Handler = async (req, res) => {
     }
   })
 
-  // const leagueObjectsWithPoints = await Promise.all(
-  //   leagueObjects.map(async (leagueObject) => {
-  //     const userIds = leagueObject.userIds.map((userId) => {
-  //       return { userId }
-  //     })
-  //     const leaguePoints = await batchGetFromDynamo<
-  //       PointsTableItem,
-  //       { userId: string }
-  //     >(userIds, pointsTableSchema, dynamoClient, POINTS_TABLE_NAME, [
-  //       "userId",
-  //       "pointsHistory",
-  //       "totalPoints",
-  //     ])
-
-  //     const leagueWithPoints = await Promise.all(
-  //       leaguePoints.map(async (userPoints) => {
-  //         const livePoints = await getLivePointsForUser(userPoints.userId)
-  //         return {
-  //           userId: userPoints.userId,
-  //           totalPoints: userPoints.totalPoints + livePoints,
-  //           previousTotalPoints: userPoints.pointsHistory
-  //             .slice(0, 1)
-  //             .reduce((partial, a) => a + partial, 0),
-  //         }
-  //       })
-  //     )
-
-  //     const usersWithCurrentRankings = rank(
-  //       leagueWithPoints,
-  //       (a, b) => b.totalPoints - a.totalPoints,
-  //       true
-  //     )
-  //     const usersWithCurrentAndPreviousRankings = rank(
-  //       usersWithCurrentRankings,
-  //       (a, b) =>
-  //         (b.previousTotalPoints as number) - (a.previousTotalPoints as number),
-  //       true,
-  //       "yesterdayRank"
-  //     )
-
-  //     return {
-  //       ...leagueObject,
-  //       users: usersWithCurrentAndPreviousRankings,
-  //       currentRanking: usersWithCurrentRankings.filter(
-  //         (user) => user.userId == userId
-  //       )[0].rank,
-  //       previousRanking: usersWithCurrentAndPreviousRankings.filter(
-  //         (user) => user.userId == userId
-  //       )[0].yesterdayRank,
-  //     }
-  //   })
-  // )
-
   const data = {
     userId: parsedUserData.userId,
     givenName: parsedUserData.givenName,

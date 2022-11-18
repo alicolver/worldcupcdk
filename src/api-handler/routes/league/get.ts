@@ -3,7 +3,9 @@ import { marshall, unmarshall } from "@aws-sdk/util-dynamodb"
 import { z } from "zod"
 import {
   leagueTableSchema,
+  PointsTableItem,
   pointsTableSchema,
+  UserTableItem,
   userTableSchema,
 } from "../../../common/dbModels/models"
 import { PARSING_ERROR, returnError } from "../../utils/constants"
@@ -17,6 +19,7 @@ import {
 import { getLivePointsForUser } from "../points/get"
 import { rank } from "../../utils/rank"
 import { getLiveMatches } from "../match/getLive"
+import { batchGetFromDynamo } from "../../utils/dynamoBatchGet"
 
 const getLeagueSchema = z.object({
   leagueId: z.string(),
@@ -40,48 +43,59 @@ export const getLeagueHandler: express.Handler = async (req, res) => {
   const liveMatches = await getLiveMatches()
 
   const parsedLeagueData = leagueTableSchema.parse(unmarshall(leagueData.Item))
-  const userObjects = await Promise.all(
-    parsedLeagueData.userIds.map(async (userId) => {
-      const usersData = await dynamoClient.send(
-        new GetItemCommand({
-          TableName: USERS_TABLE_NAME,
-          Key: marshall({ userId }),
-        })
-      )
-      if (!usersData.Item) {
-        throw new Error("Unable to find user data")
-      }
-      const parsedUsersData = userTableSchema.parse(unmarshall(usersData.Item))
 
-      const userPoints = await dynamoClient.send(
-        new GetItemCommand({
-          TableName: POINTS_TABLE_NAME,
-          Key: marshall({ userId }),
-        })
-      )
-      if (!userPoints.Item) {
-        throw new Error("Unable to find user points")
-      }
-      const pointsItem = pointsTableSchema.parse(unmarshall(userPoints.Item))
+  const userIds = parsedLeagueData.userIds.map(userId => {return { userId }})
 
-      const livePoints = await getLivePointsForUser(userId, liveMatches)
-
-      return {
-        ...parsedUsersData,
-        totalPoints: pointsItem.totalPoints + livePoints,
-        previousTotalPoints: pointsItem.pointsHistory
-          .slice(0, 1)
-          .reduce((partial, a) => a + partial, 0),
-      }
-    })
+  const users = await batchGetFromDynamo<UserTableItem, {userId: string}>(
+    userIds,
+    userTableSchema,
+    dynamoClient,
+    USERS_TABLE_NAME,
+    ["userId", "givenName", "familyName", "leagueIds"]
   )
 
+  const points = await batchGetFromDynamo<PointsTableItem, {userId: string}>(
+    userIds,
+    pointsTableSchema,
+    dynamoClient,
+    POINTS_TABLE_NAME,
+    ["userId", "pointsHistory", "totalPoints"]
+  )
+
+  const liveTotalPointsAndPrevious = await Promise.all(points.map(async pointRecord => {
+    const livePoints = await getLivePointsForUser(pointRecord.userId, liveMatches)
+    return {
+      userId: pointRecord.userId,
+      totalPoints: livePoints + pointRecord.totalPoints,
+      previousTotalPoints: pointRecord.pointsHistory
+        .slice(0, 1)
+        .reduce((partial, a) => a + partial, 0),
+    }
+  }))
+
+  const merged = []
+
+  for(let i=0; i<users.length; i++) {
+    merged.push({
+      ...users[i], 
+      ...(liveTotalPointsAndPrevious.find((itmInner) => itmInner.userId === users[i].userId))}
+    )
+  }
+
+  const userPointsObjects = merged.map(userPoints => {
+    return {
+      ...userPoints,
+      totalPoints: userPoints.totalPoints || 0,
+      previousTotalPoints: userPoints.previousTotalPoints || 0
+    }
+  })
+
   const usersWithCurrentRankings = rank(
-    userObjects,
+    userPointsObjects,
     (a, b) => b.totalPoints - a.totalPoints,
     true
   )
-  // TODO: fix the typing here and on the rank function!
+
   const usersWithCurrentAndPreviousRankings = rank(
     usersWithCurrentRankings,
     (a, b) => (b.previousTotalPoints as number) - (a.previousTotalPoints as number),

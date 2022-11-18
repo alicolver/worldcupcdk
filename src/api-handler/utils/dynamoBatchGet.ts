@@ -1,5 +1,6 @@
 import { BatchGetItemCommand, DynamoDBClient } from "@aws-sdk/client-dynamodb"
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb"
+import { CLOUDFRONT_DEFAULT_SECURITY_POLICY_TLS_V1_2_2021 } from "aws-cdk-lib/cx-api"
 import { ZodSchema } from "zod"
 
 export const batchGetFromDynamo = async <T1, T2>(

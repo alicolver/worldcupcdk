@@ -30,7 +30,7 @@ export const batchGetFromDynamo = async <T1, T2>(
           new BatchGetItemCommand({
             RequestItems: {
               [tableName]: {
-                Keys: batches[0].map((key) => marshall(key)),
+                Keys: batch.map((key) => marshall(key)),
                 ProjectionExpression: projectionKeys.join(", "),
               },
             },

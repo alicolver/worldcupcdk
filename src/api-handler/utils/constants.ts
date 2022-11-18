@@ -58,6 +58,11 @@ export const NO_BODY_ERROR = {
   body: { message: "No body included in request" }
 }
 
+export const NO_MATCH = {
+  statusCode: 400,
+  body: { message: "Cannot find match with matchId" }
+}
+
 export const returnError = (res: express.Response, error: errorResponse) => {
   res.status(error.statusCode)
   res.json(error.body)

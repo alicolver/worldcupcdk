@@ -1,6 +1,4 @@
-import {
-  GetItemCommand,
-} from "@aws-sdk/client-dynamodb"
+import { GetItemCommand } from "@aws-sdk/client-dynamodb"
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb"
 import { z } from "zod"
 import {
@@ -34,13 +32,14 @@ export const getPredictionsForUserId = async (
           Key: marshall({ userId, matchId }),
         })
       )
-      if (!prediction.Item) throw new Error("Cannot find prediction")
+      if (!prediction.Item) return { matchId, userId }
       return unmarshall(prediction.Item)
     })
   )
   const parsedResponses = unmarshalledResponses.map((points) =>
     predictionsTableSchema.parse(points)
   )
+
   return parsedResponses
 }
 
@@ -54,13 +53,39 @@ export const getPredictionHandler: express.Handler = async (req, res) => {
   try {
     const predictionsRecord = await getPredictionsForUserId(userId, matchIds)
 
+    const transformedPredictions = convertArrayToObject(predictionsRecord)
+    predictionsRecord.reduce((obj, item) => {
+      return {
+        ...obj,
+        [item["matchId"]]: {
+          homeScore: item.homeScore,
+          awayScore: item.awayScore,
+        },
+      }
+    }, transformedPredictions)
+
     res.status(200)
     res.json({
       message: "Successfully fetched predictions",
-      body: predictionsRecord,
+      body: transformedPredictions,
     })
   } catch (error) {
     console.log(error)
     return returnError(res, DATABASE_ERROR)
   }
+}
+
+const convertArrayToObject = (array: PredictionsTableItem[]) => {
+  const initialValue = {}
+  return array.reduce((obj, item) => {
+    return {
+      ...obj,
+      [item["matchId"]]: {
+        homeScore:
+          item.homeScore || item.homeScore === 0 ? item.homeScore : null,
+        awayScore:
+          item.awayScore || item.awayScore === 0 ? item.awayScore : null,
+      },
+    }
+  }, initialValue)
 }

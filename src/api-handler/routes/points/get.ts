@@ -18,7 +18,7 @@ import {
   predictionsTableSchema,
 } from "../../../common/dbModels/models"
 import { getLiveMatches } from "../match/getLive"
-import { calculatePoints } from "../../utils/points"
+import { calculatePoints, calculateTodaysPoints } from "../../utils/points"
 import { PREDICTIONS_TABLE_NAME } from "../../utils/database"
 import { getUserId } from "../auth/utils"
 
@@ -99,7 +99,8 @@ export const getPointsHandler: express.Handler = async (req, res) => {
     const pointsWithLive = await Promise.all(
       pointsRecords.map(async (userPoints) => {
         const livePoints = await getLivePointsForUser(userPoints.userId, liveMatches)
-        return { ...userPoints, livePoints }
+        const todaysPoints = calculateTodaysPoints(userPoints.pointsHistory, livePoints)
+        return { ...userPoints, livePoints, todaysPoints }
       })
     )
 

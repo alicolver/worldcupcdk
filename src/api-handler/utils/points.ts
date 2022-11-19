@@ -1,3 +1,5 @@
+import { getFormattedDate, isMatchDay, numberOfPreviousMatchDays } from "./date"
+
 type Result = {
   homeScore: number;
   awayScore: number;
@@ -27,4 +29,13 @@ export const calculatePoints = (prediction: Result, result: Result): number => {
   }
 
   return points
+}
+
+export const calculateTodaysPoints = (pointsHistory: number[], livePoints: number) => {
+  const formattedDate = getFormattedDate(new Date())
+  if (!isMatchDay[formattedDate]) return 0
+  const previousMatchDays = numberOfPreviousMatchDays[formattedDate]
+  if (!previousMatchDays) return 0 
+  if (pointsHistory.length < previousMatchDays) return livePoints
+  return pointsHistory.slice(-1)[0] + livePoints
 }

@@ -20,10 +20,7 @@ import {
 import { getLiveMatches } from "../match/getLive"
 import { calculatePoints } from "../../utils/points"
 import { PREDICTIONS_TABLE_NAME } from "../../utils/database"
-
-const getPointsSchema = z.object({
-  userIds: z.array(z.string()),
-})
+import { getUserId } from "../auth/utils"
 
 const POINTS_TABLE_NAME = process.env.POINTS_TABLE_NAME as string
 
@@ -93,15 +90,11 @@ export const getLivePointsForUser = async (userId: string, liveMatches: MatchesT
 }
 
 export const getPointsHandler: express.Handler = async (req, res) => {
-  const getPoints = getPointsSchema.safeParse(req.body)
-  if (!getPoints.success) return returnError(res, PARSING_ERROR)
-
   const liveMatches = await getLiveMatches()
 
-  const getPointsData = getPoints.data
-  const { userIds } = getPointsData
+  const userId = getUserId(req.user!)
   try {
-    const pointsRecords = await getPointsForUsers(userIds)
+    const pointsRecords = await getPointsForUsers([userId])
 
     const pointsWithLive = await Promise.all(
       pointsRecords.map(async (userPoints) => {

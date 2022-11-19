@@ -106,7 +106,7 @@ export const getPointsHandler: express.Handler = async (req, res) => {
     res.status(200)
     res.json({
       message: "Successfully fetched points",
-      body: pointsWithLive,
+      data: pointsWithLive,
     })
   } catch (error) {
     console.log(error)

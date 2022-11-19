@@ -103,7 +103,7 @@ export const getMatchPredictionsForLeagueHandler: express.Handler = async (
     res.status(200)
     res.json({
       message: "Successfully fetched predictions",
-      body: leaguePredictions,
+      data: leaguePredictions,
     })
   } catch (error) {
     console.log(error)

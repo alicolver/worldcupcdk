@@ -67,7 +67,7 @@ export const getPredictionHandler: express.Handler = async (req, res) => {
     res.status(200)
     res.json({
       message: "Successfully fetched predictions",
-      data: transformedPredictions,
+      body: transformedPredictions,
     })
   } catch (error) {
     console.log(error)

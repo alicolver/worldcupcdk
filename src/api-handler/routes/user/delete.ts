@@ -3,7 +3,9 @@ import { marshall, unmarshall } from "@aws-sdk/util-dynamodb"
 import express from "express"
 import { z } from "zod"
 import {
+  LeagueTableItem,
   leagueTableSchema,
+  UserTableItem,
   userTableSchema,
 } from "../../../common/dbModels/models"
 import { dynamoClient } from "../../utils/clients"
@@ -13,7 +15,7 @@ import {
   returnError,
 } from "../../utils/constants"
 import { LEAGUE_TABLE_NAME, USERS_TABLE_NAME } from "../../utils/database"
-import { batchGetFromDynamo } from "../../utils/dynamoBatchGet"
+import { batchGetFromDynamo, batchPutInDynamo } from "../../utils/dynamo"
 
 const deleteUserSchema = z.object({
   userId: z.string(),
@@ -59,15 +61,10 @@ export const deleteUserHandler: express.Handler = async (req, res) => {
   })
 
   try {
-    await Promise.all(
-      updatedLeagues.map(async (updatedLeague) => {
-        await dynamoClient.send(
-          new PutItemCommand({
-            TableName: LEAGUE_TABLE_NAME,
-            Item: marshall(updatedLeague),
-          })
-        )
-      })
+    await batchPutInDynamo(
+      updatedLeagues,
+      dynamoClient,
+      LEAGUE_TABLE_NAME
     )
     await dynamoClient.send(
       new PutItemCommand({

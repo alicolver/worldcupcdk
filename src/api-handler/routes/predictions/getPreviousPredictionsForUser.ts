@@ -65,7 +65,7 @@ export const getPreviousPredictionsForUserHandler: express.Handler = async (
     res.status(200)
     res.json({
       message: "Successfully fetched predictions",
-      body: userMatchesPredictions,
+      data: userMatchesPredictions,
     })
   } catch (error) {
     console.log(error)

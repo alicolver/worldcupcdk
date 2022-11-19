@@ -18,8 +18,8 @@ export const addDays = (date: Date, days: number): Date => {
 }
 
 export const numberOfPreviousMatchDays: Record<string, number> = {
-  "2022-11-20": 1,
-  "2022-11-21": 2,
+  "2022-11-19": 1,
+  "2022-11-20": 2,
   "2022-11-22": 3,
   "2022-11-23": 4,
   "2022-11-24": 5,
@@ -50,8 +50,8 @@ export const numberOfPreviousMatchDays: Record<string, number> = {
 }
 
 export const isMatchDay: Record<string, boolean> = {
+  "2022-11-19": true,
   "2022-11-20": true,
-  "2022-11-21": true,
   "2022-11-22": true,
   "2022-11-23": true,
   "2022-11-24": true,

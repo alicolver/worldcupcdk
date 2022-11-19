@@ -2,10 +2,8 @@ import {
   GetItemCommand,
 } from "@aws-sdk/client-dynamodb"
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb"
-import { z } from "zod"
 import {
   DATABASE_ERROR,
-  PARSING_ERROR,
   returnError,
 } from "../../utils/constants"
 import express from "express"
@@ -63,27 +61,15 @@ export const getLivePointsForUser = async (userId: string, liveMatches: MatchesT
         )
       }
       
-      if (
-        parsedPrediction &&
-        (parsedPrediction.awayScore === 0 || parsedPrediction.awayScore) &&
-        (parsedPrediction.homeScore === 0 || parsedPrediction.homeScore)
-      ) {
-        console.log(JSON.stringify({ homeScore: parsedPrediction.homeScore, awayScore: parsedPrediction.awayScore }),
-          JSON.stringify({
-            homeScore: liveMatch.result ? liveMatch.result.home : 0,
-            awayScore: liveMatch.result ? liveMatch.result.away : 0,
-          }))
-        const points = calculatePoints(
-          { homeScore: parsedPrediction.homeScore, awayScore: parsedPrediction.awayScore },
-          {
-            homeScore: liveMatch.result ? liveMatch.result.home : 0,
-            awayScore: liveMatch.result ? liveMatch.result.away : 0,
-          }
-        )
-        console.log(points)
-        return points
-      }
-      return 0
+      const points = calculatePoints(
+        {
+          homeScore: liveMatch.result ? liveMatch.result.home : 0,
+          awayScore: liveMatch.result ? liveMatch.result.away : 0,
+        },
+        { homeScore: parsedPrediction.homeScore, awayScore: parsedPrediction.awayScore },
+      )
+      return points
+        
     })
   )
   return livePoints.reduce((partialSum, a) => partialSum + a, 0)

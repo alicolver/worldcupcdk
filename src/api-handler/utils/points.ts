@@ -5,30 +5,48 @@ type Result = {
   awayScore: number;
 };
 
-export const calculatePoints = (prediction: Result, result: Result): number => {
-  let points = 0
+type Prediction = {
+  homeScore?: number | null;
+  awayScore?: number | null;
+}
 
-  // correct result 2 points
-  if (
-    (prediction.homeScore < prediction.awayScore &&
-      result.homeScore < result.awayScore) ||
-    (prediction.homeScore > prediction.awayScore &&
-      result.homeScore > result.awayScore) ||
-    (prediction.homeScore === prediction.awayScore &&
-      result.homeScore === result.awayScore)
-  ) {
-    points += 2
+export const calculatePoints = (result: Result, prediction?: Prediction ): number => {
+  if (!prediction) {
+    return 0
+  }
+  
+  if (!prediction.homeScore && prediction.homeScore !== 0) {
+    return 0
   }
 
-  // correct score 1 bonus point
+  if (!prediction.awayScore && prediction.awayScore !== 0) {
+    return 0
+  }
+
+  // correct score 5 points
   if (
     prediction.awayScore === result.awayScore &&
     prediction.homeScore === result.homeScore
   ) {
-    points += 1
+    return 5
   }
 
-  return points
+  // correct result 2 points
+  if (prediction.homeScore < prediction.awayScore &&
+      result.homeScore < result.awayScore) {
+    return 2
+  }
+  if (prediction.homeScore > prediction.awayScore &&
+      result.homeScore > result.awayScore) {
+    return 2
+  }
+  if (prediction.homeScore === prediction.awayScore &&
+      result.homeScore === result.awayScore) {
+    return 2
+  }
+  
+
+  return 0
 }
 
 export const calculateTodaysPoints = (pointsHistory: number[], livePoints: number) => {

@@ -1,7 +1,4 @@
-import {
-  PutItemCommand,
-  ScanCommand,
-} from "@aws-sdk/client-dynamodb"
+import { PutItemCommand, ScanCommand } from "@aws-sdk/client-dynamodb"
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb"
 import { z } from "zod"
 import {
@@ -32,7 +29,6 @@ const endMatchSchema = z.object({
   awayScore: z.number(),
 })
 
-// TODO: Wrap with admin
 export const endMatchHandler: express.Handler = async (req, res) => {
   const endMatch = endMatchSchema.safeParse(req.body)
   if (!endMatch.success) return returnError(res, PARSING_ERROR)
@@ -40,6 +36,10 @@ export const endMatchHandler: express.Handler = async (req, res) => {
   const { matchId, homeScore, awayScore } = endMatch.data
 
   const match = await getMatchFromId(matchId)
+  if (match.isFinished) {
+    res.status(400), res.json({ message: "Match has already been ended" })
+    return
+  }
   const updatedMatch = {
     ...match,
     isFinished: true,
@@ -77,20 +77,23 @@ export const endMatchHandler: express.Handler = async (req, res) => {
         const prediction = (
           await getPredictionsForUserId(userId, [matchId])
         )[0]
-        const userPoints = (await getPointsForUsers([userId]))[0]
-        const points = (prediction && prediction.homeScore && prediction.awayScore) ? calculatePoints(
-          { homeScore: prediction.homeScore, awayScore: prediction.awayScore },
-          { homeScore, awayScore }
-        ) : 0
 
-        const updatedPrediction: PredictionsTableItem = prediction ? {
-          ...prediction,
-          points,
-        } : {
-          matchId,
-          userId,
-          points
-        }
+        const userPoints = (await getPointsForUsers([userId]))[0]
+        const points = calculatePoints(
+          { homeScore, awayScore },
+          { homeScore: prediction.homeScore, awayScore: prediction.awayScore }
+        )
+
+        const updatedPrediction: PredictionsTableItem = prediction
+          ? {
+            ...prediction,
+            points,
+          }
+          : {
+            matchId,
+            userId,
+            points,
+          }
 
         const pointsHistory = userPoints.pointsHistory
         if (pointsHistory.length < match.matchDay) {

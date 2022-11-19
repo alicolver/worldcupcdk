@@ -19,7 +19,7 @@ import {
 import { getLivePointsForUser } from "../points/get"
 import { rank } from "../../utils/rank"
 import { getLiveMatches } from "../match/getLive"
-import { batchGetFromDynamo } from "../../utils/dynamoBatchGet"
+import { batchGetFromDynamo } from "../../utils/dynamo"
 
 const getLeagueSchema = z.object({
   leagueId: z.string(),

@@ -13,7 +13,7 @@ import { getUserId } from "../auth/utils"
 import { LEAGUE_TABLE_NAME, POINTS_TABLE_NAME } from "../../utils/database"
 import { rank } from "../../utils/rank"
 import { getLivePointsForUser } from "../points/get"
-import { batchGetFromDynamo } from "../../utils/dynamoBatchGet"
+import { batchGetFromDynamo } from "../../utils/dynamo"
 import { getLiveMatches } from "../match/getLive"
 
 const USERS_TABLE_NAME = process.env.USERS_TABLE_NAME as string

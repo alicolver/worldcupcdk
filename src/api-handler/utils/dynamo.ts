@@ -1,7 +1,27 @@
-import { BatchGetItemCommand, DynamoDBClient } from "@aws-sdk/client-dynamodb"
+import {
+  BatchGetItemCommand,
+  BatchWriteItemCommand,
+  DynamoDBClient,
+} from "@aws-sdk/client-dynamodb"
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb"
-import { CLOUDFRONT_DEFAULT_SECURITY_POLICY_TLS_V1_2_2021 } from "aws-cdk-lib/cx-api"
 import { ZodSchema } from "zod"
+
+const batchItems = <T>(items: T[]): T[][] => {
+  const batches: T[][] = []
+  let current_batch = []
+  let item_count = 0
+  for (const x in items) {
+    item_count++
+    current_batch.push(items[x])
+    if (item_count % 25 == 0) {
+      batches.push(current_batch)
+      current_batch = []
+    }
+  }
+  if (current_batch.length > 0 && current_batch.length != 25)
+    batches.push(current_batch)
+  return batches
+} 
 
 export const batchGetFromDynamo = async <T1, T2>(
   keys: T2[],
@@ -10,20 +30,7 @@ export const batchGetFromDynamo = async <T1, T2>(
   tableName: string,
   projectionKeys: string[]
 ): Promise<T1[]> => {
-  const batches: T2[][] = []
-  let current_batch = []
-  let item_count = 0
-  for (const x in keys) {
-    item_count++
-    current_batch.push(keys[x])
-    if (item_count % 25 == 0) {
-      batches.push(current_batch)
-      current_batch = []
-    }
-  }
-  if (current_batch.length > 0 && current_batch.length != 25)
-    batches.push(current_batch)
-
+  const batches = batchItems(keys)
   const data = (
     await Promise.all(
       batches.map(async (batch) => {
@@ -48,4 +55,30 @@ export const batchGetFromDynamo = async <T1, T2>(
 
   const parsedData = data.map((record) => schema.parse(record))
   return parsedData
+}
+
+export const batchPutInDynamo = async <T>(
+  items: T[],
+  dynamoClient: DynamoDBClient,
+  tableName: string
+) => {
+  const batches = batchItems(items)
+
+  await Promise.all(
+    batches.map(async (batch) => {
+      await dynamoClient.send(
+        new BatchWriteItemCommand({
+          RequestItems: {
+            [tableName]: batch.map((item) => {
+              return {
+                PutRequest: {
+                  Item: marshall(item),
+                },
+              }
+            }),
+          },
+        })
+      )
+    })
+  )
 }

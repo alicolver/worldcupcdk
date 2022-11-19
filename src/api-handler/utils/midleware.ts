@@ -31,3 +31,17 @@ export const authRequired: express.Handler = async (req: express.Request, res: e
   req.user = result.result!.commandResult! // If result.success is true then result.result will be defined
   next()
 }
+
+export const adminRequired: express.Handler = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  // if we have called authRequired before adminRequired this should exist
+  const user = req.user!
+  const isAdmin = user.UserAttributes?.filter(attribute => attribute.Name === "custom:isAdmin")[0]
+  if (!isAdmin) {
+    return returnError(res, UNAUTHORIZED)
+  }
+  console.log(`isAdmin: ${isAdmin.Value}`)
+  if (isAdmin.Value !== "true") {
+    return returnError(res, UNAUTHORIZED)
+  }
+  next()
+}

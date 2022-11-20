@@ -68,7 +68,7 @@ export const getLeagueHandler: express.Handler = async (req, res) => {
       userId: pointRecord.userId,
       totalPoints: livePoints + pointRecord.totalPoints,
       previousTotalPoints: pointRecord.pointsHistory
-        .slice(0, 1)
+        .slice(0, -1)
         .reduce((partial, a) => a + partial, 0),
     }
   }))

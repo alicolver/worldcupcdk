@@ -1,11 +1,8 @@
-import { number, string } from "zod"
-
-export const convertArrayToObject = (array: Record<string, any>[], key: string) => {
-  const initialValue = {}
-  return array.reduce((obj, item) => {
-    return {
-      ...obj,
-      [item[key]]: item,
-    }
-  }, initialValue)
-}
+export const arrayToObject = <T extends Record<K, any>, K extends keyof any>(
+  array: T[] = [],
+  getKey: (item: T) => K
+) =>
+    array.reduce((obj, cur) => {
+      const key = getKey(cur)
+      return { ...obj, [key]: cur }
+    }, {} as Record<K, T>)

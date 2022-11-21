@@ -12,7 +12,6 @@ import {
   leagueTableSchema,
   MatchesTableItem,
   matchesTableSchema,
-  PredictionsTableItem,
   predictionsTableSchema,
   userTableSchema,
 } from "../../../common/dbModels/models"
@@ -22,6 +21,8 @@ import {
   USERS_TABLE_NAME,
 } from "../../utils/database"
 import { getFormattedDate } from "../../utils/date"
+import { batchGetFromDynamo } from "../../utils/dynamo"
+import { arrayToObject } from "../../utils/utils"
 
 const getMatchPredictionsSchema = z.object({
   leagueId: z.string(),
@@ -64,46 +65,48 @@ export const getMatchPredictionsForLeagueHandler: express.Handler = async (
   }
 
   try {
-    const leaguePredictions = await Promise.all(
-      parsedLeague.userIds.map(async (userId) => {
-        const prediction = await dynamoClient.send(
-          new GetItemCommand({
-            TableName: PREDICTIONS_TABLE_NAME,
-            Key: marshall({ userId, matchId }),
-          })
-        )
-        let parsedPrediction: PredictionsTableItem
-        if (!prediction.Item) {
-          parsedPrediction = {
-            userId,
-            matchId
-          }
-        } else {
-          parsedPrediction = predictionsTableSchema.parse(
-            unmarshall(prediction.Item)
-          )
-        }
-        
-        const user = await dynamoClient.send(
-          new GetItemCommand({
-            TableName: USERS_TABLE_NAME,
-            Key: marshall({ userId }),
-          })
-        )
-        if (!user.Item) throw new Error("Could not find user")
-        const parsedUser = userTableSchema.parse(unmarshall(user.Item))
+    const keysForPredictions = parsedLeague.userIds.map((userId) => {
+      return { userId, matchId }
+    })
 
-        return {
-          user: parsedUser,
-          prediction: parsedPrediction,
-        }
-      })
+    const userPredictions = await batchGetFromDynamo(
+      keysForPredictions,
+      predictionsTableSchema,
+      dynamoClient,
+      PREDICTIONS_TABLE_NAME,
+      ["userId", "matchId", "homeScore", "awayScore", "points"]
     )
+
+    const keysForUsers = parsedLeague.userIds.map((userId) => {
+      return { userId }
+    })
+
+    const users = await batchGetFromDynamo(
+      keysForUsers,
+      userTableSchema,
+      dynamoClient,
+      USERS_TABLE_NAME,
+      ["userId", "givenName", "familyName", "leagueIds"]
+    )
+
+    const usersObject = arrayToObject(users, user => user.userId)
+    const predictionsObject = arrayToObject(userPredictions, prediction => prediction.userId)
+
+    const userPredictionObjects: Data = parsedLeague.userIds.map(userId => {
+      return {
+        userId,
+        givenName: usersObject[userId].givenName,
+        familyName: usersObject[userId].familyName,
+        homeScore: predictionsObject[userId].homeScore,
+        awayScore: predictionsObject[userId].awayScore,
+        points: predictionsObject[userId].points || 0
+      }
+    })
 
     res.status(200)
     res.json({
       message: "Successfully fetched predictions",
-      data: leaguePredictions,
+      data: userPredictionObjects,
     })
   } catch (error) {
     console.log(error)
@@ -119,3 +122,14 @@ const isFutureMatch = (match: MatchesTableItem): boolean => {
     return false
   else return true
 }
+
+interface UserPrediction {
+  userId: string;
+  givenName: string;
+  familyName: string;
+  homeScore: number | undefined | null;
+  awayScore: number | undefined | null;
+  points: number;
+}
+
+type Data = UserPrediction[]

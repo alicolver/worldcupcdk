@@ -7,13 +7,12 @@ import {
 import express from "express"
 import { getFinishedMatches } from "../match/getPrevious"
 import { dynamoClient } from "../../utils/clients"
-import { GetItemCommand } from "@aws-sdk/client-dynamodb"
-import { marshall, unmarshall } from "@aws-sdk/util-dynamodb"
 import {
-  PredictionsTableItem,
   predictionsTableSchema,
 } from "../../../common/dbModels/models"
 import { getLiveMatches } from "../match/getLive"
+import { batchGetFromDynamo } from "../../utils/dynamo"
+import { arrayToObject } from "../../utils/utils"
 
 const getPreviousPredictionsForUserSchema = z.object({
   userId: z.string(),
@@ -35,37 +34,37 @@ export const getPreviousPredictionsForUserHandler: express.Handler = async (
   const liveMatches = await getLiveMatches()
   const matches = pastMatches.concat(liveMatches)
 
-  const userMatchesPredictions = await Promise.all(
-    matches.map(async (match) => {
-      const prediction = await dynamoClient.send(
-        new GetItemCommand({
-          TableName: PREDICTIONS_TABLE_NAME,
-          Key: marshall({ matchId: match.matchId, userId }),
-        })
-      )
-      let parsedPrediction: PredictionsTableItem
-      if (!prediction.Item) {
-        parsedPrediction = {
-          userId,
-          matchId: match.matchId,
-        }
-      } else {
-        parsedPrediction = predictionsTableSchema.parse(
-          unmarshall(prediction.Item)
-        )
-      }
-      return {
-        match,
-        prediction: parsedPrediction,
-      }
-    })
+  const predictionKeys = matches.map((match) => {
+    return { matchId: match.matchId, userId }
+  })
+
+  const predictions = await batchGetFromDynamo(
+    predictionKeys,
+    predictionsTableSchema,
+    dynamoClient,
+    PREDICTIONS_TABLE_NAME,
+    ["userId", "matchId", "homeScore", "awayScore", "points"]
   )
+
+  const predictionObjects = arrayToObject(predictions, prediction => prediction.matchId)
+
+  const matchPredictions = matches.map(match => {
+    const prediction = predictionObjects[match.matchId]
+    return {
+      ...match,
+      prediction: {
+        homeScore: prediction ? prediction.homeScore : null,
+        awayScore: prediction ? prediction.awayScore : null,
+      },
+      points: prediction ? prediction.points : 0
+    }
+  })
 
   try {
     res.status(200)
     res.json({
       message: "Successfully fetched predictions",
-      data: userMatchesPredictions,
+      data: matchPredictions,
     })
   } catch (error) {
     console.log(error)

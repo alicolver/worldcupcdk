@@ -14,14 +14,14 @@ import {
 } from "../../utils/database"
 import express from "express"
 import { dynamoClient } from "../../utils/clients"
-import { getPointsForUsers } from "../points/get"
-import { getPredictionsForUserId } from "../predictions/fetch"
 import { getMatchFromId } from "./utils"
 import {
-  PointsTableItem,
-  PredictionsTableItem,
+  pointsTableSchema,
+  predictionsTableSchema,
 } from "../../../common/dbModels/models"
 import { calculatePoints } from "../../utils/points"
+import { batchGetFromDynamo, batchPutInDynamo } from "../../utils/dynamo"
+import { arrayToObject } from "../../utils/utils"
 
 const endMatchSchema = z.object({
   matchId: z.string(),
@@ -37,7 +37,7 @@ export const endMatchHandler: express.Handler = async (req, res) => {
 
   const match = await getMatchFromId(matchId)
   if (match.isFinished) {
-    res.status(400), res.json({ message: "Match has already been ended" })
+    res.status(409), res.json({ message: "Match has already been ended" })
     return
   }
   const updatedMatch = {
@@ -54,11 +54,17 @@ export const endMatchHandler: express.Handler = async (req, res) => {
       new PutItemCommand({
         TableName: MATCHES_TABLE_NAME,
         Item: marshall(updatedMatch),
+        ConditionExpression: "#finished = :false",
+
+        ExpressionAttributeNames: { "#finished": "isFinished" },
+        ExpressionAttributeValues: { ":false": { BOOL: false } },
       })
     )
   } catch (error) {
     console.log(error)
-    return returnError(res, DATABASE_ERROR)
+    res.status(409)
+    res.json({ message: "Match has already been ended" })
+    return
   }
 
   try {
@@ -72,57 +78,62 @@ export const endMatchHandler: express.Handler = async (req, res) => {
       .array(z.string())
       .parse(userIdsScan.Items?.map((userId) => unmarshall(userId).userId))
 
-    await Promise.all(
-      userIds.map(async (userId) => {
-        const prediction = (
-          await getPredictionsForUserId(userId, [matchId])
-        )[0]
+    const predictionKeys = userIds.map((userId) => {
+      return { userId, matchId }
+    })
 
-        const userPoints = (await getPointsForUsers([userId]))[0]
-        const points = calculatePoints(
-          { homeScore, awayScore },
-          { homeScore: prediction.homeScore, awayScore: prediction.awayScore }
-        )
-
-        const updatedPrediction: PredictionsTableItem = prediction
-          ? {
-            ...prediction,
-            points,
-          }
-          : {
-            matchId,
-            userId,
-            points,
-          }
-
-        const pointsHistory = userPoints.pointsHistory
-        if (pointsHistory.length < match.matchDay) {
-          pointsHistory.push(points)
-        } else {
-          const todaysPoints = pointsHistory.pop()
-          pointsHistory.push((todaysPoints || 0) + points)
-        }
-
-        const updatedUserPoints: PointsTableItem = {
-          ...userPoints,
-          pointsHistory,
-          totalPoints: userPoints.totalPoints + points,
-        }
-        await dynamoClient.send(
-          new PutItemCommand({
-            TableName: POINTS_TABLE_NAME,
-            Item: marshall(updatedUserPoints),
-          })
-        )
-        await dynamoClient.send(
-          new PutItemCommand({
-            TableName: PREDICTIONS_TABLE_NAME,
-            Item: marshall(updatedPrediction),
-          })
-        )
-        return userId
-      })
+    const predictions = await batchGetFromDynamo(
+      predictionKeys,
+      predictionsTableSchema,
+      dynamoClient,
+      PREDICTIONS_TABLE_NAME,
+      ["userId", "matchId", "homeScore", "awayScore", "points"]
     )
+
+    const pointKeys = userIds.map((userId) => {
+      return { userId }
+    })
+
+    const userPoints = await batchGetFromDynamo(
+      pointKeys,
+      pointsTableSchema,
+      dynamoClient,
+      POINTS_TABLE_NAME,
+      ["userId", "pointsHistory", "totalPoints"]
+    )
+
+    const updatedPredictions = predictions.map(
+      (prediction) => {
+        return {
+          ...prediction,
+          points: calculatePoints(
+            { homeScore, awayScore },
+            { homeScore: prediction.homeScore, awayScore: prediction.awayScore }
+          ) || 0,
+        }
+      }
+    )
+    
+    const predictionWithPointsObj = arrayToObject(updatedPredictions, prediction => prediction.userId)
+
+    const updatedUserPoints = userPoints.map(pointsObj => {
+      const pointsHistory = pointsObj.pointsHistory
+      const points = predictionWithPointsObj[pointsObj.userId].points
+      if (pointsHistory.length < match.matchDay) {
+        pointsHistory.push(points)
+      } else {
+        const todaysPoints = pointsHistory.pop()
+        pointsHistory.push((todaysPoints || 0) + points)
+      }
+      return {
+        ...pointsObj,
+        pointsHistory,
+        totalPoints: pointsObj.totalPoints + points,
+      }
+    })
+
+    await batchPutInDynamo(updatedPredictions, dynamoClient, PREDICTIONS_TABLE_NAME)
+    await batchPutInDynamo(updatedUserPoints, dynamoClient, POINTS_TABLE_NAME)
   } catch (error) {
     console.log(error)
     return returnError(res, DATABASE_ERROR)

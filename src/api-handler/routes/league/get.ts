@@ -93,13 +93,13 @@ export const getLeagueHandler: express.Handler = async (req, res) => {
   const usersWithCurrentRankings = rank(
     userPointsObjects,
     (a, b) => b.totalPoints - a.totalPoints,
-    true
+    false
   )
 
   const usersWithCurrentAndPreviousRankings = rank(
     usersWithCurrentRankings,
     (a, b) => (b.previousTotalPoints as number) - (a.previousTotalPoints as number),
-    true,
+    false,
     "yesterdayRank"
   )
 

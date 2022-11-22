@@ -113,13 +113,10 @@ export const endMatchHandler: express.Handler = async (req, res) => {
         }
       }
     )
-    console.log(`Updated predictions: ${JSON.stringify(updatedPredictions)}`)
-    console.log(`User points: ${JSON.stringify(userPoints)}`)
     
     const predictionWithPointsObj = arrayToObject(updatedPredictions, prediction => prediction.userId)
 
     const updatedUserPoints = userPoints.map(pointsObj => {
-      console.log(`Pointsobj: ${JSON.stringify(pointsObj)}`)
       const prediction = predictionWithPointsObj[pointsObj.userId]
       const pointsHistory = pointsObj.pointsHistory
       const points = prediction ? prediction.points : 0

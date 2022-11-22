@@ -11,7 +11,7 @@ import {
   predictionsTableSchema,
   userTableSchema,
 } from "../../../common/dbModels/models"
-import { calculatePoints } from "../../utils/points"
+import { calculatePoints, calculateTodaysPoints } from "../../utils/points"
 import {
   LEAGUE_TABLE_NAME,
   PREDICTIONS_TABLE_NAME,
@@ -21,6 +21,7 @@ import { getUserId } from "../auth/utils"
 import { batchGetFromDynamo } from "../../utils/dynamo"
 import { arrayToObject } from "../../utils/utils"
 import { z } from "zod"
+import { getLiveMatches } from "../match/getLive"
 
 const POINTS_TABLE_NAME = process.env.POINTS_TABLE_NAME as string
 
@@ -169,10 +170,27 @@ export const getPointsForUserHandler: express.Handler = async (req, res) => {
     res.json({ message: "Cannot find points for user" })
     return
   }
+  
   const parsedPoints = pointsTableSchema.parse(unmarshall(points.Item))
+
+  const liveMatches = await getLiveMatches()
+
+  const livePoints = await getLivePointsForUser(
+    parsedPoints.userId,
+    liveMatches
+  )
+  const todaysPoints = calculateTodaysPoints(
+    parsedPoints.pointsHistory,
+    livePoints
+  )
   res.status(200)
   res.json({
     message: "Successfully retrieved points for user",
-    data: parsedPoints,
+    data: {
+      ...parsedPoints,
+      totalPoints: parsedPoints.totalPoints + livePoints,
+      livePoints,
+      todaysPoints,
+    }
   })
 }

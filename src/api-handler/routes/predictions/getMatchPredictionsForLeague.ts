@@ -23,6 +23,7 @@ import {
 import { getFormattedDate } from "../../utils/date"
 import { batchGetFromDynamo } from "../../utils/dynamo"
 import { arrayToObject } from "../../utils/utils"
+import { calculatePoints } from "../../utils/points"
 
 const getMatchPredictionsSchema = z.object({
   leagueId: z.string(),
@@ -89,18 +90,31 @@ export const getMatchPredictionsForLeagueHandler: express.Handler = async (
       ["userId", "givenName", "familyName", "leagueIds"]
     )
 
-    const usersObject = arrayToObject(users, user => user.userId)
-    const predictionsObject = arrayToObject(userPredictions, prediction => prediction.userId)
+    const usersObject = arrayToObject(users, (user) => user.userId)
+    const predictionsObject = arrayToObject(
+      userPredictions,
+      (prediction) => prediction.userId
+    )
 
-    const userPredictionObjects: Data = parsedLeague.userIds.map(userId => {
+    const userPredictionObjects: Data = parsedLeague.userIds.map((userId) => {
       const prediction = predictionsObject[userId]
+      const points = calculatePoints(
+        {
+          homeScore: parsedMatch.result ? parsedMatch.result.away : 0,
+          awayScore: parsedMatch.result ? parsedMatch.result.home : 0,
+        },
+        {
+          homeScore: prediction ? prediction.homeScore : null,
+          awayScore: prediction ? prediction.awayScore : null,
+        }
+      )
       return {
         userId,
         givenName: usersObject[userId].givenName,
         familyName: usersObject[userId].familyName,
         homeScore: prediction ? prediction.homeScore : null,
         awayScore: prediction ? prediction.awayScore : null,
-        points: prediction ? prediction.points : 0
+        points,
       }
     })
 
@@ -133,4 +147,4 @@ interface UserPrediction {
   points: number | undefined | null;
 }
 
-type Data = UserPrediction[]
+type Data = UserPrediction[];

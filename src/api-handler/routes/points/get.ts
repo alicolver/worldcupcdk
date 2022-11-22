@@ -1,19 +1,25 @@
 import { GetItemCommand } from "@aws-sdk/client-dynamodb"
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb"
-import { DATABASE_ERROR, returnError } from "../../utils/constants"
 import express from "express"
 import { dynamoClient } from "../../utils/clients"
 import {
+  leagueTableSchema,
   MatchesTableItem,
   PointsTableItem,
   pointsTableSchema,
   PredictionsTableItem,
   predictionsTableSchema,
+  userTableSchema,
 } from "../../../common/dbModels/models"
-import { getLiveMatches } from "../match/getLive"
-import { calculatePoints, calculateTodaysPoints } from "../../utils/points"
-import { PREDICTIONS_TABLE_NAME } from "../../utils/database"
+import { calculatePoints } from "../../utils/points"
+import {
+  LEAGUE_TABLE_NAME,
+  PREDICTIONS_TABLE_NAME,
+  USERS_TABLE_NAME,
+} from "../../utils/database"
 import { getUserId } from "../auth/utils"
+import { batchGetFromDynamo } from "../../utils/dynamo"
+import { arrayToObject } from "../../utils/utils"
 
 const POINTS_TABLE_NAME = process.env.POINTS_TABLE_NAME as string
 
@@ -79,39 +85,91 @@ export const getLivePointsForUser = async (
   return livePoints.reduce((partialSum, a) => partialSum + a, 0)
 }
 
-export const getPointsHandler: express.Handler = async (req, res) => {
-  const liveMatches = await getLiveMatches()
-
-  const userId = getUserId(req.user!)
-  try {
-    const pointsRecords = await getPointsForUsers([userId])
-
-    const pointsWithLive = await Promise.all(
-      pointsRecords.map(async (userPoints) => {
-        const livePoints = await getLivePointsForUser(
-          userPoints.userId,
-          liveMatches
-        )
-        const todaysPoints = calculateTodaysPoints(
-          userPoints.pointsHistory,
-          livePoints
-        )
-        return {
-          ...userPoints,
-          totalPoints: userPoints.totalPoints + livePoints,
-          livePoints,
-          todaysPoints,
-        }
-      })
-    )
-
-    res.status(200)
-    res.json({
-      message: "Successfully fetched points",
-      data: pointsWithLive,
-    })
-  } catch (error) {
-    console.log(error)
-    return returnError(res, DATABASE_ERROR)
+export const getPointsForLeagueHandler: express.Handler = async (req, res) => {
+  const leagueId = req.query["league-id"] as string | undefined
+  if (!leagueId) {
+    res.status(400)
+    res.json({ message: "leagueId must be included as query paramter" })
   }
+
+  const league = await dynamoClient.send(
+    new GetItemCommand({
+      TableName: LEAGUE_TABLE_NAME,
+      Key: marshall({ leagueId }),
+    })
+  )
+
+  if (!league.Item) {
+    res.status(400)
+    res.json({ message: "Cannot find league" })
+    return
+  }
+  const parsedLeague = leagueTableSchema.parse(unmarshall(league.Item))
+  const userIds = parsedLeague.userIds
+  const keys = userIds.map((userId) => {
+    return { userId }
+  })
+
+  const pointsRecords = await batchGetFromDynamo(
+    keys,
+    pointsTableSchema,
+    dynamoClient,
+    POINTS_TABLE_NAME,
+    ["userId", "pointsHistory", "totalPoints"]
+  )
+  const userRecords = await batchGetFromDynamo(
+    keys,
+    userTableSchema,
+    dynamoClient,
+    USERS_TABLE_NAME,
+    ["userId", "familyName", "givenName", "leagueIds"]
+  )
+
+  const pointsRecordsObjects = arrayToObject(
+    pointsRecords,
+    (pointsRecord) => pointsRecord.userId
+  )
+  const userRecordsObjects = arrayToObject(
+    userRecords,
+    (userRecord) => userRecord.userId
+  )
+
+  const userPointsRecords = userIds.map((userId) => {
+    const pointsRecord = pointsRecordsObjects[userId]
+    const userRecord = userRecordsObjects[userId]
+    return {
+      userId,
+      givenName: userRecord.givenName,
+      familyName: userRecord.familyName,
+      pointsHistory: pointsRecord.pointsHistory,
+      totalPoints: pointsRecord.totalPoints,
+    }
+  })
+
+  res.status(200)
+  res.json({
+    message: "Succesfully fetched points",
+    data: userPointsRecords,
+  })
+}
+
+export const getPointsForUserHandler: express.Handler = async (req, res) => {
+  const userId = getUserId(req.user!)
+  const points = await dynamoClient.send(
+    new GetItemCommand({
+      TableName: POINTS_TABLE_NAME,
+      Key: marshall({ userId }),
+    })
+  )
+  if (!points.Item) {
+    res.status(400)
+    res.json({ message: "Cannot find points for user" })
+    return
+  }
+  const parsedPoints = pointsTableSchema.parse(unmarshall(points.Item))
+  res.status(200)
+  res.json({
+    message: "Successfully retrieved points for user",
+    data: parsedPoints,
+  })
 }

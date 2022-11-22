@@ -100,8 +100,8 @@ export const getMatchPredictionsForLeagueHandler: express.Handler = async (
       const prediction = predictionsObject[userId]
       const points = calculatePoints(
         {
-          homeScore: parsedMatch.result ? parsedMatch.result.away : 0,
-          awayScore: parsedMatch.result ? parsedMatch.result.home : 0,
+          homeScore: parsedMatch.result ? parsedMatch.result.home : 0,
+          awayScore: parsedMatch.result ? parsedMatch.result.away : 0,
         },
         {
           homeScore: prediction ? prediction.homeScore : null,

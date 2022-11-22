@@ -93,13 +93,14 @@ export const getMatchPredictionsForLeagueHandler: express.Handler = async (
     const predictionsObject = arrayToObject(userPredictions, prediction => prediction.userId)
 
     const userPredictionObjects: Data = parsedLeague.userIds.map(userId => {
+      const prediction = predictionsObject[userId]
       return {
         userId,
         givenName: usersObject[userId].givenName,
         familyName: usersObject[userId].familyName,
-        homeScore: predictionsObject[userId].homeScore,
-        awayScore: predictionsObject[userId].awayScore,
-        points: predictionsObject[userId].points || 0
+        homeScore: prediction ? prediction.homeScore : null,
+        awayScore: prediction ? prediction.awayScore : null,
+        points: prediction ? prediction.points : 0
       }
     })
 
@@ -129,7 +130,7 @@ interface UserPrediction {
   familyName: string;
   homeScore: number | undefined | null;
   awayScore: number | undefined | null;
-  points: number;
+  points: number | undefined | null;
 }
 
 type Data = UserPrediction[]

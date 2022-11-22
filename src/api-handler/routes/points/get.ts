@@ -20,6 +20,7 @@ import {
 import { getUserId } from "../auth/utils"
 import { batchGetFromDynamo } from "../../utils/dynamo"
 import { arrayToObject } from "../../utils/utils"
+import { z } from "zod"
 
 const POINTS_TABLE_NAME = process.env.POINTS_TABLE_NAME as string
 
@@ -86,11 +87,13 @@ export const getLivePointsForUser = async (
 }
 
 export const getPointsForLeagueHandler: express.Handler = async (req, res) => {
-  const leagueId = req.query["league-id"] as string | undefined
-  if (!leagueId) {
+  const leagueIdParsed = z.string().safeParse(req.query["league-id"])
+  if (!leagueIdParsed.success) {
     res.status(400)
     res.json({ message: "leagueId must be included as query paramter" })
+    return
   }
+  const leagueId = leagueIdParsed.data
 
   const league = await dynamoClient.send(
     new GetItemCommand({

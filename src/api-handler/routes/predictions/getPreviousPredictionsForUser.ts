@@ -31,7 +31,7 @@ export const getPreviousPredictionsForUserHandler: express.Handler = async (
   const { userId } = getPreviousPredictionsForUser.data
 
   const pastMatches = await getFinishedMatches()
-  // const liveMatches = await getLiveMatches()
+  // const liveMatches = await getLiveMatches(
   const matches = pastMatches
 
   const predictionKeys = matches.map((match) => {

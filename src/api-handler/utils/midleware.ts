@@ -14,7 +14,7 @@ const getRefreshToken = (headers: IncomingHttpHeaders): string | undefined => {
 export const authRequired: express.Handler = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
   const authToken = req.headers["authorization"]
 
-  if (!authToken || typeof authToken !== "string") {
+  if (authToken && typeof authToken !== "string") {
     return returnError(res, UNAUTHORIZED)
   }
 

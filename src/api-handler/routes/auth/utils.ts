@@ -14,7 +14,12 @@ interface getUserResult {
   newAuthToken?: string,
 }
 
-const sendGetUserCommand = async (accessToken: string): Promise<cognitoResult<GetUserCommandOutput>> => {
+const sendGetUserCommand = async (accessToken?: string): Promise<cognitoResult<GetUserCommandOutput>> => {
+  if (!accessToken) {
+    return {
+      success: false
+    }
+  }
   try {
     const user = await cognito.send(new GetUserCommand({ AccessToken: String(accessToken) }))
     return {
@@ -51,15 +56,13 @@ const refreshAuthToken = async (refreshToken: string): Promise<cognitoResult<Ini
   }
 }
 
-export const getUser = async (accessToken: string, refreshToken?: string): Promise<cognitoResult<getUserResult>> => {
+export const getUser = async (accessToken?: string, refreshToken?: string): Promise<cognitoResult<getUserResult>> => {
   let getUserResult = await sendGetUserCommand(accessToken)
   let newAuthToken = undefined
 
   if (!getUserResult.success && refreshToken) {
-    console.log("Failed initial command, trying again with refresh token")
     const refreshResult = await refreshAuthToken(refreshToken)
     if (refreshResult.success && refreshResult.result?.AuthenticationResult?.AccessToken) {
-      console.log("Second get user was successful")
       newAuthToken = refreshResult.result?.AuthenticationResult?.AccessToken
       getUserResult = await sendGetUserCommand(newAuthToken)
     }

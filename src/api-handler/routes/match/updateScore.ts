@@ -19,6 +19,7 @@ const updateScoreSchema = z.object({
   matchId: z.string(),
   homeScore: z.number(),
   awayScore: z.number(),
+  toGoThrough: z.enum(["HOME", "AWAY"]).nullish(),
 })
 
 const isMatchLive = (match: MatchesTableItem): boolean => {
@@ -31,7 +32,7 @@ const isMatchLive = (match: MatchesTableItem): boolean => {
 export const updateScoreHandler: express.Handler = async (req, res) => {
   const updateScore = updateScoreSchema.safeParse(req.body)
   if (!updateScore.success) return returnError(res, PARSING_ERROR)
-  const { matchId, homeScore, awayScore } = updateScore.data
+  const { matchId, homeScore, awayScore, toGoThrough } = updateScore.data
   const match = await dynamoClient.send(
     new GetItemCommand({
       TableName: MATCHES_TABLE_NAME,
@@ -52,6 +53,7 @@ export const updateScoreHandler: express.Handler = async (req, res) => {
       home: homeScore,
       away: awayScore,
     },
+    toGoThrough: toGoThrough ? toGoThrough : null
   }
   try {
     await dynamoClient.send(

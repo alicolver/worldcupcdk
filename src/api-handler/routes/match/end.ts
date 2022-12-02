@@ -27,18 +27,23 @@ const endMatchSchema = z.object({
   matchId: z.string(),
   homeScore: z.number(),
   awayScore: z.number(),
+  toGoThrough: z.enum(["HOME", "AWAY"]).nullish(),
 })
 
 export const endMatchHandler: express.Handler = async (req, res) => {
   const endMatch = endMatchSchema.safeParse(req.body)
   if (!endMatch.success) return returnError(res, PARSING_ERROR)
 
-  const { matchId, homeScore, awayScore } = endMatch.data
+  const { matchId, homeScore, awayScore, toGoThrough } = endMatch.data
 
   const match = await getMatchFromId(matchId)
   if (match.isFinished) {
     res.status(409), res.json({ message: "Match has already been ended" })
     return
+  }
+  if (match.gameStage != "GROUP" && !toGoThrough) {
+    res.status(403)
+    res.json({ message: "toGoThrough must be defined for knockout game" })
   }
   const updatedMatch = {
     ...match,
@@ -47,6 +52,7 @@ export const endMatchHandler: express.Handler = async (req, res) => {
       home: homeScore,
       away: awayScore,
     },
+    ...(toGoThrough ? { toGoThrough } : {}),
   }
 
   try {
@@ -87,7 +93,7 @@ export const endMatchHandler: express.Handler = async (req, res) => {
       predictionsTableSchema,
       dynamoClient,
       PREDICTIONS_TABLE_NAME,
-      ["userId", "matchId", "homeScore", "awayScore", "points"]
+      ["userId", "matchId", "homeScore", "awayScore", "points", "toGoThrough"]
     )
 
     const pointKeys = userIds.map((userId) => {
@@ -102,21 +108,34 @@ export const endMatchHandler: express.Handler = async (req, res) => {
       ["userId", "pointsHistory", "totalPoints"]
     )
 
-    const updatedPredictions = predictions.map(
-      (prediction) => {
-        return {
-          ...prediction,
-          points: calculatePoints(
-            { homeScore, awayScore },
-            { homeScore: prediction.homeScore, awayScore: prediction.awayScore }
+    const updatedPredictions = predictions.map((prediction) => {
+      return {
+        ...prediction,
+        points:
+          calculatePoints(
+            {
+              homeScore,
+              awayScore,
+              toGoThrough: toGoThrough ? toGoThrough : undefined,
+              stage: match.gameStage,
+            },
+            {
+              homeScore: prediction.homeScore,
+              awayScore: prediction.awayScore,
+              toGoThrough: prediction.toGoThrough
+                ? prediction.toGoThrough
+                : undefined,
+            }
           ) || 0,
-        }
       }
-    )
-    
-    const predictionWithPointsObj = arrayToObject(updatedPredictions, prediction => prediction.userId)
+    })
 
-    const updatedUserPoints = userPoints.map(pointsObj => {
+    const predictionWithPointsObj = arrayToObject(
+      updatedPredictions,
+      (prediction) => prediction.userId
+    )
+
+    const updatedUserPoints = userPoints.map((pointsObj) => {
       const prediction = predictionWithPointsObj[pointsObj.userId]
       const pointsHistory = pointsObj.pointsHistory
       const points = prediction ? prediction.points : 0
@@ -133,7 +152,11 @@ export const endMatchHandler: express.Handler = async (req, res) => {
       }
     })
 
-    await batchPutInDynamo(updatedPredictions, dynamoClient, PREDICTIONS_TABLE_NAME)
+    await batchPutInDynamo(
+      updatedPredictions,
+      dynamoClient,
+      PREDICTIONS_TABLE_NAME
+    )
     await batchPutInDynamo(updatedUserPoints, dynamoClient, POINTS_TABLE_NAME)
   } catch (error) {
     console.log(error)

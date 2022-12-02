@@ -19,6 +19,7 @@ const postPredictionSchema = z.object({
   matchId: z.string(),
   homeScore: z.number(),
   awayScore: z.number(),
+  toGoThrough: z.enum(["HOME", "AWAY"]).nullish()
 })
 
 const PREDICTIONS_TABLE_NAME = process.env.PREDICTIONS_TABLE_NAME as string
@@ -26,14 +27,15 @@ const PREDICTIONS_TABLE_NAME = process.env.PREDICTIONS_TABLE_NAME as string
 export const makePredictionHandler: express.Handler = async (req, res) => {
   const prediction = postPredictionSchema.safeParse(req.body)
   if (!prediction.success) return returnError(res, PARSING_ERROR)
-  const { matchId, homeScore, awayScore } = prediction.data
+  const { matchId, homeScore, awayScore, toGoThrough } = prediction.data
   const userId = getUserId(req.user!)
 
   const predictionItem: PredictionsTableItem = {
     userId,
     matchId,
-    homeScore: homeScore,
-    awayScore: awayScore,
+    homeScore,
+    awayScore,
+    ...(toGoThrough ? {toGoThrough} : {})
   }
 
   const params = {
@@ -55,6 +57,11 @@ export const makePredictionHandler: express.Handler = async (req, res) => {
     ) {
       res.status(403)
       res.json({message: "Cannot enter prediction after kick off"})
+    }
+    if (parsedMatch.gameStage != "GROUP" && !toGoThrough) {
+      res.status(403)
+      res.json({message: "Must enter team to go through for knockout"})
+      return
     }
     await dynamoClient.send(new PutItemCommand(params))
   } catch (error) {

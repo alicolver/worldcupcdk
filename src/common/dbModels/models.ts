@@ -24,6 +24,7 @@ export const predictionsTableSchema = z.object({
   matchId: z.string(),
   homeScore: z.number().nullish(),
   awayScore: z.number().nullish(),
+  toGoThrough: z.enum(["HOME", "AWAY"]).nullish(),
   points: z.number().nullish()
 })
 
@@ -33,6 +34,7 @@ export const matchesTableSchema = z.object({
   awayTeam: z.string(),
   gameStage: z.enum(["GROUP", "FINAL", "SEMIFINAL", "QUARTERFINAL", "OCTOFINAL"]),
   result: z.optional(z.object({ home: z.number(), away: z.number() })),
+  toGoThrough: z.enum(["HOME", "AWAY"]).nullish(),
   matchDay: z.number(),
   matchDate: z.string(),
   matchTime: z.string(),

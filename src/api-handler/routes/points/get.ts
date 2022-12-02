@@ -75,6 +75,7 @@ export const getLivePointsForUser = async (
         {
           homeScore: liveMatch.result ? liveMatch.result.home : 0,
           awayScore: liveMatch.result ? liveMatch.result.away : 0,
+          stage: liveMatch.gameStage
         },
         {
           homeScore: parsedPrediction.homeScore,

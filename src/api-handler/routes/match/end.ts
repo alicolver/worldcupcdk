@@ -27,18 +27,23 @@ const endMatchSchema = z.object({
   matchId: z.string(),
   homeScore: z.number(),
   awayScore: z.number(),
+  toGoThrough: z.enum(["home", "away"]).nullish(),
 })
 
 export const endMatchHandler: express.Handler = async (req, res) => {
   const endMatch = endMatchSchema.safeParse(req.body)
   if (!endMatch.success) return returnError(res, PARSING_ERROR)
 
-  const { matchId, homeScore, awayScore } = endMatch.data
+  const { matchId, homeScore, awayScore, toGoThrough } = endMatch.data
 
   const match = await getMatchFromId(matchId)
   if (match.isFinished) {
     res.status(409), res.json({ message: "Match has already been ended" })
     return
+  }
+  if (match.gameStage != "GROUP" && !toGoThrough) {
+    res.status(403)
+    res.json({ message: "toGoThrough must be defined for knockout game" })
   }
   const updatedMatch = {
     ...match,
@@ -47,6 +52,7 @@ export const endMatchHandler: express.Handler = async (req, res) => {
       home: homeScore,
       away: awayScore,
     },
+    toGoThrough
   }
 
   try {
@@ -107,7 +113,7 @@ export const endMatchHandler: express.Handler = async (req, res) => {
         return {
           ...prediction,
           points: calculatePoints(
-            { homeScore, awayScore },
+            { homeScore, awayScore, stage: match.gameStage },
             { homeScore: prediction.homeScore, awayScore: prediction.awayScore }
           ) || 0,
         }

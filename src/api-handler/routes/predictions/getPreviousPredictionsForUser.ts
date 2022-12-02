@@ -10,7 +10,6 @@ import { dynamoClient } from "../../utils/clients"
 import {
   predictionsTableSchema,
 } from "../../../common/dbModels/models"
-import { getLiveMatches } from "../match/getLive"
 import { batchGetFromDynamo } from "../../utils/dynamo"
 import { arrayToObject } from "../../utils/utils"
 
@@ -31,7 +30,6 @@ export const getPreviousPredictionsForUserHandler: express.Handler = async (
   const { userId } = getPreviousPredictionsForUser.data
 
   const pastMatches = await getFinishedMatches()
-  // const liveMatches = await getLiveMatches(
   const matches = pastMatches
 
   const predictionKeys = matches.map((match) => {

@@ -19,7 +19,7 @@ const updateScoreSchema = z.object({
   matchId: z.string(),
   homeScore: z.number(),
   awayScore: z.number(),
-  toGoThrough: z.enum(["home", "away"]).nullish(),
+  toGoThrough: z.enum(["HOME", "AWAY"]).nullish(),
 })
 
 const isMatchLive = (match: MatchesTableItem): boolean => {

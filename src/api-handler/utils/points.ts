@@ -8,13 +8,13 @@ type Result = {
   homeScore: number;
   awayScore: number;
   stage: "GROUP" | "FINAL" | "SEMIFINAL" | "QUARTERFINAL" | "OCTOFINAL";
-  toGoThrough?: "home" | "away";
+  toGoThrough?: "HOME" | "AWAY";
 };
 
 type Prediction = {
   homeScore?: number | null;
   awayScore?: number | null;
-  toGoThrough?: "home" | "away";
+  toGoThrough?: "HOME" | "AWAY";
 };
 
 export const calculatePoints = (

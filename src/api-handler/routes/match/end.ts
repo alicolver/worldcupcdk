@@ -27,7 +27,7 @@ const endMatchSchema = z.object({
   matchId: z.string(),
   homeScore: z.number(),
   awayScore: z.number(),
-  toGoThrough: z.enum(["home", "away"]).nullish(),
+  toGoThrough: z.enum(["HOME", "AWAY"]).nullish(),
 })
 
 export const endMatchHandler: express.Handler = async (req, res) => {

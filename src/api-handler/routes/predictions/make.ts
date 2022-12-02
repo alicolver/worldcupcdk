@@ -19,7 +19,7 @@ const postPredictionSchema = z.object({
   matchId: z.string(),
   homeScore: z.number(),
   awayScore: z.number(),
-  toGoThrough: z.enum(["home", "away"]).nullish()
+  toGoThrough: z.enum(["HOME", "AWAY"]).nullish()
 })
 
 const PREDICTIONS_TABLE_NAME = process.env.PREDICTIONS_TABLE_NAME as string

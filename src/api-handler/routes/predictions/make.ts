@@ -35,7 +35,7 @@ export const makePredictionHandler: express.Handler = async (req, res) => {
     matchId,
     homeScore,
     awayScore,
-    toGoThrough
+    ...(toGoThrough ? {toGoThrough} : {})
   }
 
   const params = {
@@ -58,9 +58,10 @@ export const makePredictionHandler: express.Handler = async (req, res) => {
       res.status(403)
       res.json({message: "Cannot enter prediction after kick off"})
     }
-    if (parsedMatch.awayTeam != "GROUP" && !toGoThrough) {
+    if (parsedMatch.gameStage != "GROUP" && !toGoThrough) {
       res.status(403)
       res.json({message: "Must enter team to go through for knockout"})
+      return
     }
     await dynamoClient.send(new PutItemCommand(params))
   } catch (error) {

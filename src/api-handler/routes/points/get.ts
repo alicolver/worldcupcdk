@@ -71,15 +71,19 @@ export const getLivePointsForUser = async (
         )
       }
 
+      console.log(`Prediction: ${JSON.stringify(prediction)}`)
+
       const points = calculatePoints(
         {
           homeScore: liveMatch.result ? liveMatch.result.home : 0,
           awayScore: liveMatch.result ? liveMatch.result.away : 0,
+          toGoThrough: liveMatch.toGoThrough ? liveMatch.toGoThrough : undefined,
           stage: liveMatch.gameStage
         },
         {
           homeScore: parsedPrediction.homeScore,
           awayScore: parsedPrediction.awayScore,
+          toGoThrough: parsedPrediction.toGoThrough ? parsedPrediction.toGoThrough : undefined
         }
       )
       return points

@@ -52,7 +52,7 @@ export const endMatchHandler: express.Handler = async (req, res) => {
       home: homeScore,
       away: awayScore,
     },
-    toGoThrough
+    ...(toGoThrough ? { toGoThrough } : {}),
   }
 
   try {
@@ -93,7 +93,7 @@ export const endMatchHandler: express.Handler = async (req, res) => {
       predictionsTableSchema,
       dynamoClient,
       PREDICTIONS_TABLE_NAME,
-      ["userId", "matchId", "homeScore", "awayScore", "points"]
+      ["userId", "matchId", "homeScore", "awayScore", "points", "toGoThrough"]
     )
 
     const pointKeys = userIds.map((userId) => {
@@ -108,21 +108,34 @@ export const endMatchHandler: express.Handler = async (req, res) => {
       ["userId", "pointsHistory", "totalPoints"]
     )
 
-    const updatedPredictions = predictions.map(
-      (prediction) => {
-        return {
-          ...prediction,
-          points: calculatePoints(
-            { homeScore, awayScore, stage: match.gameStage },
-            { homeScore: prediction.homeScore, awayScore: prediction.awayScore }
+    const updatedPredictions = predictions.map((prediction) => {
+      return {
+        ...prediction,
+        points:
+          calculatePoints(
+            {
+              homeScore,
+              awayScore,
+              toGoThrough: toGoThrough ? toGoThrough : undefined,
+              stage: match.gameStage,
+            },
+            {
+              homeScore: prediction.homeScore,
+              awayScore: prediction.awayScore,
+              toGoThrough: prediction.toGoThrough
+                ? prediction.toGoThrough
+                : undefined,
+            }
           ) || 0,
-        }
       }
-    )
-    
-    const predictionWithPointsObj = arrayToObject(updatedPredictions, prediction => prediction.userId)
+    })
 
-    const updatedUserPoints = userPoints.map(pointsObj => {
+    const predictionWithPointsObj = arrayToObject(
+      updatedPredictions,
+      (prediction) => prediction.userId
+    )
+
+    const updatedUserPoints = userPoints.map((pointsObj) => {
       const prediction = predictionWithPointsObj[pointsObj.userId]
       const pointsHistory = pointsObj.pointsHistory
       const points = prediction ? prediction.points : 0
@@ -139,7 +152,11 @@ export const endMatchHandler: express.Handler = async (req, res) => {
       }
     })
 
-    await batchPutInDynamo(updatedPredictions, dynamoClient, PREDICTIONS_TABLE_NAME)
+    await batchPutInDynamo(
+      updatedPredictions,
+      dynamoClient,
+      PREDICTIONS_TABLE_NAME
+    )
     await batchPutInDynamo(updatedUserPoints, dynamoClient, POINTS_TABLE_NAME)
   } catch (error) {
     console.log(error)

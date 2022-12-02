@@ -53,7 +53,7 @@ export const updateScoreHandler: express.Handler = async (req, res) => {
       home: homeScore,
       away: awayScore,
     },
-    toGoThrough
+    toGoThrough: toGoThrough ? toGoThrough : null
   }
   try {
     await dynamoClient.send(

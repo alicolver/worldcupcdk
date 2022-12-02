@@ -29,7 +29,7 @@ export const calculatePoints = (
     return calculateGroupPoints(result, prediction)
   }
   case "FINAL":
-  case "SEMIFINAL": 
+  case "SEMIFINAL":
   case "QUARTERFINAL":
   case "OCTOFINAL": {
     return calculateKnockoutPoints(result, prediction)
@@ -37,7 +37,10 @@ export const calculatePoints = (
   }
 }
 
-const calculateKnockoutPoints = (result: Result, prediction: Prediction): number => {
+const calculateKnockoutPoints = (
+  result: Result,
+  prediction: Prediction
+): number => {
   if (!prediction.homeScore && prediction.homeScore !== 0) {
     return 0
   }
@@ -47,7 +50,11 @@ const calculateKnockoutPoints = (result: Result, prediction: Prediction): number
   }
 
   let points = 0
-  if (prediction.toGoThrough === result.toGoThrough) {
+  if (
+    prediction.toGoThrough &&
+    result.toGoThrough &&
+    prediction.toGoThrough === result.toGoThrough
+  ) {
     points = 1
   }
 

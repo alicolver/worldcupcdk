@@ -41,7 +41,7 @@ export const getPreviousPredictionsForUserHandler: express.Handler = async (
     predictionsTableSchema,
     dynamoClient,
     PREDICTIONS_TABLE_NAME,
-    ["userId", "matchId", "homeScore", "awayScore", "points"]
+    ["userId", "matchId", "homeScore", "awayScore", "points", "toGoThrough"]
   )
 
   const predictionObjects = arrayToObject(predictions, prediction => prediction.matchId)
@@ -53,6 +53,7 @@ export const getPreviousPredictionsForUserHandler: express.Handler = async (
       prediction: {
         homeScore: prediction ? prediction.homeScore : null,
         awayScore: prediction ? prediction.awayScore : null,
+        toGoThrough: prediction.toGoThrough ? prediction.toGoThrough : null
       },
       points: prediction ? prediction.points : 0
     }

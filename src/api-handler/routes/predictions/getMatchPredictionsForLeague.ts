@@ -75,7 +75,7 @@ export const getMatchPredictionsForLeagueHandler: express.Handler = async (
       predictionsTableSchema,
       dynamoClient,
       PREDICTIONS_TABLE_NAME,
-      ["userId", "matchId", "homeScore", "awayScore", "points"]
+      ["userId", "matchId", "homeScore", "awayScore", "points", "toGoThrough"]
     )
 
     const keysForUsers = parsedLeague.userIds.map((userId) => {
@@ -102,10 +102,13 @@ export const getMatchPredictionsForLeagueHandler: express.Handler = async (
         {
           homeScore: parsedMatch.result ? parsedMatch.result.home : 0,
           awayScore: parsedMatch.result ? parsedMatch.result.away : 0,
+          toGoThrough: parsedMatch.toGoThrough ? parsedMatch.toGoThrough : undefined,
+          stage: parsedMatch.gameStage
         },
         {
           homeScore: prediction ? prediction.homeScore : null,
           awayScore: prediction ? prediction.awayScore : null,
+          toGoThrough: prediction.toGoThrough ? prediction.toGoThrough : undefined
         }
       )
       return {
@@ -114,6 +117,7 @@ export const getMatchPredictionsForLeagueHandler: express.Handler = async (
         familyName: usersObject[userId].familyName,
         homeScore: prediction ? prediction.homeScore : null,
         awayScore: prediction ? prediction.awayScore : null,
+        toGoThrough: prediction.toGoThrough ? prediction.toGoThrough : null,
         points,
       }
     })

@@ -87,6 +87,7 @@ const convertArrayToObject = (array: PredictionsTableItem[]) => {
           item.homeScore || item.homeScore === 0 ? item.homeScore : null,
         awayScore:
           item.awayScore || item.awayScore === 0 ? item.awayScore : null,
+        ...(item.toGoThrough ? {toGoThrough: item.toGoThrough} : {})
       },
     }
   }, initialValue)

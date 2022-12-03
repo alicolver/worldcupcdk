@@ -60,7 +60,7 @@ export const getPredictionHandler: express.Handler = async (req, res) => {
         [item["matchId"]]: {
           homeScore: item.homeScore,
           awayScore: item.awayScore,
-          toGoThrough: item.toGoThrough
+          ...(item.toGoThrough ? {toGoThrough: item.toGoThrough} : {})
         },
       }
     }, transformedPredictions)

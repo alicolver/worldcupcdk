@@ -117,7 +117,7 @@ export const getMatchPredictionsForLeagueHandler: express.Handler = async (
         familyName: usersObject[userId].familyName,
         homeScore: prediction ? prediction.homeScore : null,
         awayScore: prediction ? prediction.awayScore : null,
-        toGoThrough: prediction.toGoThrough ? prediction.toGoThrough : null,
+        toGoThrough: prediction && prediction.toGoThrough ? prediction.toGoThrough : null,
         points,
       }
     })

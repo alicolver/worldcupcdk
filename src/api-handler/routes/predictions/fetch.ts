@@ -54,6 +54,7 @@ export const getPredictionHandler: express.Handler = async (req, res) => {
     const predictionsRecord = await getPredictionsForUserId(userId, matchIds)
 
     const transformedPredictions = convertArrayToObject(predictionsRecord)
+
     predictionsRecord.reduce((obj, item) => {
       return {
         ...obj,

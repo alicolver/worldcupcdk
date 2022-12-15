@@ -28,11 +28,13 @@ export const calculatePoints = (
   case "GROUP": {
     return calculateGroupPoints(result, prediction)
   }
-  case "FINAL":
   case "SEMIFINAL":
   case "QUARTERFINAL":
   case "OCTOFINAL": {
     return calculateKnockoutPoints(result, prediction)
+  }
+  case "FINAL": {
+    return 2 * calculateKnockoutPoints(result, prediction)
   }
   }
 }
